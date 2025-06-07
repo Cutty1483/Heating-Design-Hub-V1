@@ -923,6 +923,7 @@
                             <span id="drawingAreaDisplay" class="text-gray-700">Area: 0.00 m²</span>
                             <span id="drawingPerimeterDisplay" class="text-gray-700">Perimeter: 0.00 m</span>
                         </div>
+                        <button id="generate3DButton" class="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">Create 3D View</button>
                     </div>
 
                     <!-- 3D View Canvas -->
@@ -1191,6 +1192,7 @@
         const windowsDoorsContainer = document.getElementById('windowsDoorsContainer');
         const addWindowBtn = document.getElementById('addWindowBtn');
         const addDoorBtn = document.getElementById('addDoorBtn');
+        const generate3DButton = document.getElementById('generate3DButton');
 
         // Inner tab elements for Heat Loss Calculator
         const innerTabButtons = document.querySelectorAll('.tab-buttons-main .tab-button-main');
@@ -1321,6 +1323,14 @@
 
             // Event Listeners for Heat Loss & Radiator Sizing
             document.getElementById('calculateHeatLossBtn').addEventListener('click', calculateHeatLoss);
+            generate3DButton.addEventListener('click', () => {
+                if (process2DDrawingToRoomData()) {
+                    showInnerTab('3d-view');
+                    update3DModelFromRoomData();
+                } else {
+                    showMessageBox('Please complete the 2D drawing before generating the 3D view.', 3000);
+                }
+            });
 
             // Event listeners for current surface properties (when selected in 3D)
             wallUValueInput.addEventListener('change', updateSelectedSurfaceProperties);
