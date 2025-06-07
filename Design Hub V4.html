@@ -2247,9 +2247,22 @@
             roomMesh.add(ceilingMesh);
 
             scene.add(roomMesh);
+
+            // Auto position the camera to fit the entire room
+            const bbox = new THREE.Box3().setFromObject(roomMesh);
+            const size = bbox.getSize(new THREE.Vector3());
+            const center = bbox.getCenter(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fitHeightDistance = maxDim / (2 * Math.atan(Math.PI * camera.fov / 360));
+            const fitWidthDistance = fitHeightDistance / camera.aspect;
+            const distance = Math.max(fitHeightDistance, fitWidthDistance);
+            camera.position.set(center.x + distance, center.y + distance, center.z + distance);
+            controls.target.copy(center);
+            controls.update();
+
             // Calling render3DModel here will ensure it renders immediately after model update
             // and the requestAnimationFrame loop will keep it rendering.
-            render3DModel(); 
+            render3DModel();
         }
 
         /**
