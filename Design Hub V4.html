@@ -1,0 +1,3074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>William Wilson Heating Design Hub V5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        /* Base styles */
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif; /* Changed to Inter for consistency */
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f7f9fc;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        header {
+            background-color: #FF6600;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        header p {
+            font-size: 18px;
+            margin: 0;
+        }
+        
+        footer {
+            background-color: #f1f1f1;
+            color: #666;
+            text-align: center;
+            padding: 10px;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            display: flex; /* Added flex to allow for HeatCalc Pro's internal layout */
+            flex-direction: column; /* Stack content vertically */
+            min-height: 600px; /* Ensure enough height for the calculator */
+        }
+        
+        /* Tab navigation */
+        .tab-container {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .tab-nav {
+            display: flex;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        
+        .tab-button {
+            background-color: #f1f1f1;
+            border: none;
+            cursor: pointer;
+            padding: 15px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            border-bottom: 3px solid transparent;
+            outline: none;
+            color: #333;
+        }
+        
+        .tab-button:hover {
+            background-color: #e6e6e6;
+        }
+        
+        .tab-button.active {
+            background-color: #fff;
+            border-bottom: 3px solid #FF6600;
+            color: #FF6600;
+        }
+        
+        .tab-content {
+            display: none; /* FIX: Ensure non-active tabs are hidden */
+            padding: 20px;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            background-color: #fff;
+            overflow-y: auto; /* Allow scrolling for main tab content */
+            flex-grow: 1; /* Allow content to grow */
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Form elements */
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #FF6600;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #e65c00;
+        }
+        
+        /* Specific button styles */
+        .add-room {
+            background-color: #28a745;
+        }
+        
+        .add-room:hover {
+            background-color: #218838;
+        }
+        
+        .delete-room {
+            background-color: #dc3545;
+            margin-left: 10px;
+        }
+        
+        .delete-room:hover {
+            background-color: #c82333;
+        }
+        
+        .calculate {
+            margin-top: 20px;
+        }
+        
+        /* Results section */
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .results h2 {
+            color: #FF6600;
+            margin-top: 0;
+        }
+        
+        .results p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        
+        .math-details {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        
+        /* Room styling */
+        .room {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #e5e5e5;
+        }
+        
+        .room h3 {
+            margin-top: 0;
+            color: #FF6600;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        /* Home/Introduction section */
+        .intro-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .intro-card {
+            flex: 1 1 300px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .intro-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .intro-card h3 {
+            color: #FF6600;
+            margin-top: 0;
+            border-bottom: 2px solid #FF6600;
+            padding-bottom: 10px;
+        }
+        
+        .intro-card-icon {
+            font-size: 48px;
+            color: #FF6600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        /* Selection Tool - table styles */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #FF6600;
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        
+        tr:hover td {
+            background-color: #ffeccf;
+        }
+
+        /* Tool-specific styles */
+        .instructions, .disclaimer {
+            background-color: #FFF8E1;
+            border: 1px solid #FF6600;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .intro {
+            background-color: #fff;
+            padding: 20px;
+            border-left: 5px solid #FF6600;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Manufacturer card enhanced styles */
+        .manufacturer-card {
+            flex: 1 1 400px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .manufacturer-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .manufacturer-card h3 {
+            color: #FF6600;
+            margin-top: 0;
+            border-bottom: 2px solid #FF6600;
+            padding-bottom: 10px;
+        }
+
+        .manufacturer-card .video-container {
+            margin: 15px 0;
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+        }
+
+        .manufacturer-card .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        .manufacturer-card .resources {
+            margin-top: 15px;
+        }
+
+        .manufacturer-card .resources a {
+            display: block;
+            color: #FF6600;
+            text-decoration: none;
+            padding: 8px 0;
+            font-weight: 500;
+            border-bottom: 1px solid #f0f0f0;
+            transition: all 0.2s ease;
+        }
+
+        .manufacturer-card .resources a:hover {
+            color: #e65c00;
+            padding-left: 5px;
+            background-color: #fff8f4;
+        }
+
+        .manufacturer-card .resources a:last-child {
+            border-bottom: none;
+        }
+
+        /* Document section styles */
+        .documents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .document-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .document-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .document-card h4 {
+            color: #FF6600;
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .document-card .document-icon {
+            font-size: 36px;
+            color: #FF6600;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .document-card a {
+            display: block;
+            color: #333;
+            text-decoration: none;
+            padding: 8px 0;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .document-card a:hover {
+            color: #FF6600;
+        }
+
+        /* Media Queries for Responsive Design */
+        @media (max-width: 768px) {
+            .tab-button {
+                flex: 1 1 auto;
+                font-size: 14px;
+                padding: 10px;
+            }
+            
+            .main-container {
+                padding: 10px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            header h1 {
+                font-size: 24px;
+            }
+            
+            header p {
+                font-size: 16px;
+            }
+        }
+        
+        /* Error message styling */
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* --- HeatCalc Pro Specific Styles (Adapted) --- */
+        #heatloss-tab {
+            display: flex; /* Use flexbox for the internal layout of the heatloss tab */
+            flex-direction: column; /* Stack sections vertically */
+            padding: 0; /* Remove padding from main tab content as inner elements will have it */
+        }
+
+        #heatloss-tab > .section-title,
+        #heatloss-tab > .info-text,
+        #heatloss-tab > .mb-4,
+        #heatloss-tab > button {
+            padding: 0 1.5rem; /* Add horizontal padding to top-level elements */
+        }
+
+        /* Sidebar-like sections within the tab */
+        .heatcalc-sidebar-section {
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem; /* Spacing between sections */
+            border-radius: 0.5rem;
+        }
+
+        /* Main content area for 2D/3D/Results tabs */
+        .main-view-tabbed-inner {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin: 0 1.5rem 1.5rem 1.5rem; /* Margin around the main view */
+            overflow: hidden;
+        }
+
+        .tab-buttons-main {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+
+        .tab-button-main {
+            flex-grow: 1;
+            text-align: center;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            color: #64748b;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            outline: none;
+        }
+
+        .tab-button-main.active {
+            color: #3b82f6;
+            border-color: #3b82f6;
+            font-weight: 600;
+            background-color: #f8fafc;
+        }
+
+        .tab-button-main:hover:not(.active) {
+            background-color: #f1f5f9;
+        }
+
+        .tab-content-main {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: none; /* FIX: Ensure non-active inner tabs are hidden */
+            flex-direction: column;
+        }
+
+        .tab-content-main.active {
+            display: flex;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .info-text {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: -0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Specific styles for 2D drawing canvas */
+        #drawingCanvas {
+            border: 2px dashed #a0aec0;
+            background-color: #ffffff;
+            cursor: crosshair;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            max-width: 100%;
+            max-height: 100%;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Specific styles for 3D canvas container */
+        #threeJsCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background-color: #f0f2f5;
+            border-radius: 0.5rem;
+        }
+
+        /* Modal for wall length input */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+            text-align: center;
+        }
+
+        .modal-content input {
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .modal-content button {
+            width: 48%;
+            display: inline-block;
+            margin: 5px 1%;
+        }
+
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            z-index: 1000;
+            display: none;
+            text-align: center;
+            font-size: 1.1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .dynamic-item {
+            @apply border border-dashed border-gray-300 p-3 rounded-md mb-3 bg-gray-50;
+        }
+        .dynamic-item h4 {
+            @apply text-base font-medium text-gray-800 mb-2;
+        }
+        .dynamic-item .input-group {
+            @apply mb-2 flex flex-col sm:flex-row sm:items-center;
+        }
+        .dynamic-item .input-label {
+            @apply sm:w-1/3 mb-0;
+        }
+        .dynamic-item .input-field {
+            @apply sm:w-2/3;
+        }
+        .dynamic-item .remove-btn-container {
+            @apply flex justify-end mt-2;
+        }
+
+        /* Ensure heat loss results are hidden by default and only shown when active */
+        /* These styles will only apply if the parent .tab-content-main is display: flex */
+        #heatLossResult, #radiatorSuggestions {
+            /* These elements are inherently display: block or container, 
+               their visibility is controlled by the parent .tab-content-main's display property. */
+            /* No direct display: none or block needed here unless it was previously overriding */
+        }
+
+        #radiatorSuggestions {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>William Wilson Heating Design Hub V5</h1>
+        <p>Your Complete Heat Pump Solution Center</p>
+    </header>
+    
+    <div class="main-container">
+        <div class="tab-container">
+            <div class="tab-nav">
+                <button class="tab-button active" onclick="openTab('home')">Home</button>
+                <button class="tab-button" onclick="openTab('heatloss')">Heat Loss Calculator</button>
+                <!-- Radiator Sizing tab removed as it's integrated into Heat Loss Calculator -->
+                <button class="tab-button" onclick="openTab('ufh')">Underfloor Heating</button>
+                <button class="tab-button" onclick="openTab('cylinder')">Cylinder Sizing</button>
+                <button class="tab-button" onclick="openTab('selection')">Materials Selection</button>
+                <button class="tab-button" onclick="openTab('documents')">Documents</button>
+            </div>
+            
+            <!-- Home/Hub Tab -->
+            <div id="home-content" class="tab-content active">
+                <h2>Welcome to the Heating Design Hub</h2>
+                <p>Air Source Heat Pumps (ASHPs) are an efficient and environmentally friendly heating solution for homes and businesses. Use the tools in this hub to design and specify your heat pump heating system.</p>
+
+                <div class="intro-section">
+                    <div class="intro-card">
+                        <div class="intro-card-icon">🏠</div>
+                        <h3>Heat Loss Calculator</h3>
+                        <p>Calculate the heat requirements for your property based on room dimensions, insulation levels, and more, with 2D drawing, 3D visualization, and integrated radiator sizing.</p>
+                        <button onclick="openTab('heatloss')">Open Tool</button>
+                    </div>
+                    
+                    <div class="intro-card">
+                        <div class="intro-card-icon">🔄</div>
+                        <h3>Underfloor Heating</h3>
+                        <p>Plan underfloor heating requirements including pipe length, loops needed, and more.</p>
+                        <button onclick="openTab('ufh')">Open Tool</button>
+                    </div>
+                </div>
+
+                <div class="intro-section">
+                    <div class="intro-card">
+                        <div class="intro-card-icon">💧</div>
+                        <h3>Cylinder Sizing</h3>
+                        <p>Size hot water cylinders based on property size and occupancy according to MCS standards.</p>
+                        <button onclick="openTab('cylinder')">Open Tool</button>
+                    </div>
+                    
+                    <div class="intro-card">
+                        <div class="intro-card-icon">📋</div>
+                        <h3>Materials Selection</h3>
+                        <p>Generate a complete list of materials needed for your heat pump system installation.</p>
+                        <button onclick="openTab('selection')">Open Tool</button>
+                    </div>
+                </div>
+
+                <h2>Heat Pump Manufacturers</h2>
+                <div class="intro-section">
+                    <!-- Enhanced Manufacturer Cards with Resources and Videos -->
+                    <div class="manufacturer-card">
+                        <h3>Mitsubishi Electric</h3>
+                        <ul>
+                            <li>Ecodan range with high efficiency ratings</li>
+                            <li>Advanced control systems for optimal performance</li>
+                            <li>Quiet operation modes</li>
+                        </ul>
+                        <div class="video-container">
+                            <iframe width="560" height="315" src="https://www.youtube.com/embed/bmtHJHya164?si=aZy1-O1B8rRUYIMk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-restricted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                        </div>
+                        <div class="resources">
+                            <a href="https://les.mitsubishielectric.co.uk/products/residential-heating/outdoor" target="_blank">Mitsubishi Product Guide</a>
+                            <a href="https://b2b.williamwilson.co.uk/dbdocument/8657/EcodanPUZ-WM_50-60-85-112_V_H-A_A_Installation_Manual__BH79D849H02UK_.pdf" target="_blank">Installation Best Practices</a>
+                            <a href="https://b2b.williamwilson.co.uk/dbdocument/8658/Ecodan_PUZ-WM_50-60-85-112_V_H-A_A_Service_Manual__OCH727_.pdf" target="_blank">Service Manual</a>
+                        </div>
+                    </div>
+                    
+                    <div class="manufacturer-card">
+                        <h3>Grant</h3>
+                        <ul>
+                            <li>Aerona³ R32 range</li>
+                            <li>Compact designs suitable for smaller spaces</li>
+                            <li>Integration with existing heating systems</li>
+                        </ul>
+                        <div class="video-container">
+                            <iframe width="560" height="315" src="https://www.youtube.com/embed/weitFYDkHfM?si=iP_xr6mFbiOWwqei" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-restricted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                        </div>
+                        <div class="resources">
+                            <a href="https://www.grantuk.com/products/air-source-heat-pumps/" target="_blank">Grant Product Overview</a>
+                            <a href="https://b2b.williamwilson.co.uk/dbdocument/7879/grant-aerona-r32-installer.pdf" target="_blank">Installer's Manual</a>
+                            <a href="https://b2b.williamwilson.co.uk/dbdocument/7880/grant-aerona3-r32-range-data-sheet-july-2019.pdf" target="_blank">Data Sheet</a>
+                        </div>
+                    </div>
+                    
+                    <div class="manufacturer-card">
+                        <h3>Vaillant</h3>
+                        <ul>
+                            <li>aroTHERM plus range with high flow temperatures</li>
+                            <li>Intelligent controls for weather compensation</li>
+                            <li>Compatibility with solar thermal systems</li>
+                        </ul>
+                        <div class="video-container">
+                            <iframe width="560" height="315" src="https://www.youtube.com/embed/8IAVfQDHCqo?si=4ipzaJA3Gxi04P5e" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-restricted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                        </div>
+                        <div class="resources">
+                            <a href="https://www.vaillant.co.uk/product-systems/heat-pumps/view-all-heat-pumps/?gad_source=1&gclid=CjwKCAjwoJa2BhBPEiwA0l0ImBg8w4JXmeTeAQO8QYCNaAhdI3IEfFfuswXk5f46B5RgnybLt2Jn6hoC860QAvD_BwE&gclsrc=aw.ds" target="_blank">Vaillant Heat Pump Features</a>
+                            <a href="https://b2b.williamwilson.co.uk/dbdocument/10504/arotherm-plus-operating-installation-and-maintenance-instructions-1799368.pdf" target="_blank">Installer's Manual</a>
+                            <a href="https://b2b.williamwilson.co.uk/dbdocument/10508/arotherm-plus-spec-sheet-1892564.pdf" target="_blank">Data Sheet</a>
+                        </div>
+                    </div>
+
+                    <div class="manufacturer-card">
+                        <h3>Samsung</h3>
+                        <ul>
+                            <li>EHS Mono range with flexible installation options</li>
+                            <li>Smart control systems for remote management</li>
+                            <li>Efficient performance in colder climates</li>
+                        </ul>
+                        <div class="video-container">
+                            <iframe width="560" height="315" src="https://www.youtube.com/embed/SfaJq4m8U94?si=Gvy4ZSK62JQPE9oV" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-restricted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                        </div>
+                        <div class="resources">
+                            <a href="https://samsung-climatesolutions.com/gb/b2c/our-solutions/home/heat-pump-solutions/heating/mono-r290.html" target="_blank">Samsung Product Overview</a>
+                            <a href="https://downloadcenter.samsung.com/content/UM/202308/20230824154755163/EHS_R290_MONO_OD_IM_EU_DB68-12496A-00_EN_230814.pdf" target="_blank">Installer's Manual</a>
+                            <a href="https://www.bing.com/ck/a?!&&p=425ecf39d7bdda21bc5a031e459cd341e3ede41adb405543fb2bbfb8f0d6ea6cJmltdHM9MTczODE5NTIwMA&ptn=3&ver=2&hsh=4&fclid=041f9ea6-9252-6557-1113-8bf6965267c4&psq=EHS+Mono+R290+manual&u=a1aHR0cHM6Ly9zYW1zdW5nLWNsaW1hdGVzb2x1dGlvbnMuY29tL2NvbnRlbnQvZGFtL2R0bmwtYWVtLXNhbXN1bmctc2VhY2UvZ2IvZW4tZ2IvcGktc2hlZXRzL2Vocy9Nb25vJTIwUjI5MCUyMDE2a1cucGRm&ntb=F" target="_blank">Data Sheet</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Heat Loss Calculator Tab (New Integrated Version) -->
+            <div id="heatloss-content" class="tab-content">
+                <h2 class="section-title">Heat Loss Calculator & Room Design</h2>
+                <p class="info-text">Design your room layout, visualize it in 3D, calculate heat loss, and get radiator sizing suggestions.</p>
+
+                <div class="heatcalc-sidebar-section">
+                    <h3 class="section-title">Global Room Settings</h3>
+                    <div class="mb-4">
+                        <label for="roomHeight">Room Height (m):</label>
+                        <input type="number" id="roomHeight" value="2.5" step="0.1">
+                    </div>
+                    <div class="mb-4">
+                        <label for="internalTemp">Internal Temp (°C):</label>
+                        <input type="number" id="internalTemp" value="20" step="0.1">
+                    </div>
+                    <div class="mb-4">
+                        <label for="externalTemp">External Temp (°C):</label>
+                        <input type="number" id="externalTemp" value="-3" step="0.1">
+                    </div>
+                    <div class="mb-4">
+                        <label for="achInput">Air Changes per Hour (ACH):</label>
+                        <input type="number" id="achInput" value="0.5" step="0.1">
+                    </div>
+                    <button id="applyGlobalSettingsBtn" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-md font-bold text-white">Apply Global Settings</button>
+                </div>
+
+                <div class="heatcalc-sidebar-section">
+                    <h3 class="section-title">Surface Specifics</h3>
+                    <p class="info-text">Properties for the currently selected surface in the 3D view.</p>
+                    <div id="surfacePropertiesDisplay" style="display: none;">
+                        <h4 id="selectedSurfaceName" class="text-lg font-semibold text-gray-700 mb-2"></h4>
+                        <label for="wallLengthInput" id="wallLengthLabel">Length (m):</label>
+                        <input type="number" id="wallLengthInput" step="0.01" class="rounded-lg" readonly>
+                        <p class="info-text" id="wallLengthInfo">Length is derived from 2D drawing. Drag points on the 2D canvas to change.</p>
+
+                        <label for="wallUValueInput">U-Value (W/m²K):</label>
+                        <div class="flex gap-2 mb-4">
+                            <input type="number" id="wallUValueInput" step="0.01" value="0.2" class="rounded-lg flex-grow">
+                            <select id="uValuePresetSelect" class="rounded-lg w-auto">
+                                <option value="">Presets</option>
+                                <option value="0.18">Wall (Highly Insulated, New Build)</option>
+                                <option value="0.28">Wall (Standard Insulated, Existing)</option>
+                                <option value="0.50">Wall (Older Build, Uninsulated)</option>
+                                <option value="0.35">Internal Wall</option>
+                                <option value="0.12">Floor (Insulated, Ground)</option>
+                                <option value="0.22">Floor (Standard, Ground)</option>
+                                <option value="0.18">Floor (Suspended, Insulated)</option>
+                                <option value="0.35">Floor (Suspended, Uninsulated)</option>
+                                <option value="0.12">Ceiling (Insulated, Attic)</option>
+                                <option value="0.22">Ceiling (Standard, Attic)</option>
+                                <option value="0.18">Ceiling (Flat Roof, Insulated)</option>
+                                <option value="1.4">Window (Double Glazed, Modern)</option>
+                                <option value="2.0">Window (Double Glazed, Older)</option>
+                                <option value="2.8">Window (Single Glazed)</option>
+                                <option value="1.8">Door (Insulated, External)</option>
+                                <option value="3.0">Door (Standard, External)</option>
+                            </select>
+                        </div>
+                        
+                        <label for="adjacencyType" class="mt-4">Adjacency:</label>
+                        <select id="adjacencyType" class="rounded-lg mb-4">
+                            <optgroup label="Walls">
+                                <option value="external">External</option>
+                                <option value="adjacentRoomHeated" data-temp-preset="21">Adjacent Room (Heated)</option>
+                                <option value="adjacentRoomUnheated" data-temp-preset="16">Adjacent Room (Unheated)</option>
+                            </optgroup>
+                            <optgroup label="Floors">
+                                <option value="ground">Ground</option>
+                                <option value="adjacentRoomHeated" data-temp-preset="21">Adjacent Room (Heated)</option>
+                                <option value="adjacentRoomUnheated" data-temp-preset="16">Adjacent Room (Unheated)</option>
+                                <option value="unheatedSpace" data-temp-preset="10">Unheated Space (e.g., crawl space)</option>
+                            </optgroup>
+                            <optgroup label="Ceilings">
+                                <option value="unheatedAttic" data-temp-preset="auto">Unheated Attic</option>
+                                <option value="adjacentRoomHeated" data-temp-preset="21">Adjacent Room (Heated)</option>
+                                <option value="adjacentRoomUnheated" data-temp-preset="16">Adjacent Room (Unheated)</option>
+                                <option value="external">Flat Roof / External</option>
+                            </optgroup>
+                        </select>
+
+                        <div id="adjacentTempContainer" class="mb-4" style="display: none;">
+                            <label for="adjacentTempInput">Adjacent Temperature (°C):</label>
+                            <input type="number" id="adjacentTempInput" step="0.1" class="rounded-lg">
+                        </div>
+
+                        <h4 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Windows & Doors for this Surface</h4>
+                        <div id="windowsDoorsContainer" class="space-y-4">
+                            <!-- Dynamic window/door inputs will be added here -->
+                        </div>
+                        <button id="addWindowBtn" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-md font-bold text-white text-sm mt-4">Add Window</button>
+                        <button id="addDoorBtn" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-md font-bold text-white text-sm mt-4">Add Door</button>
+                    </div>
+                </div>
+
+                <div class="heatcalc-sidebar-section">
+                    <h3 class="section-title">HeatCalc Pro Tools</h3>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                        <button id="addRoomBtn" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-md font-bold text-white flex-grow">Start New Room Drawing</button>
+                        <button id="clearDrawingBtn" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md font-bold text-white flex-grow">Clear Drawing</button>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                        <label for="scaleFactorInput" class="mb-0 flex-grow">Scale Factor (pixels/meter):</label>
+                        <input type="number" id="scaleFactorInput" value="50" step="10" class="rounded-lg flex-grow">
+                    </div>
+                     <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                        <label for="snapIncrementInput" class="mb-0 flex-grow">Snap Increment (m):</label>
+                        <input type="number" id="snapIncrementInput" value="0.1" step="0.1" min="0.1" max="1.0" class="rounded-lg flex-grow">
+                        <input type="range" id="snapIncrementRange" min="0.1" max="1.0" value="0.1" step="0.1" class="flex-grow">
+                    </div>
+                    <button id="calculateHeatLossBtn" class="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-md font-bold text-white w-full">Calculate Heat Loss</button>
+                </div>
+                
+                <!-- Inner Tab Navigation for 2D/3D/Results -->
+                <div class="main-view-tabbed-inner">
+                    <div class="tab-buttons-main">
+                        <button class="tab-button-main active" data-tab="drawing" onclick="showInnerTab('drawing')">2D Drawing</button>
+                        <button class="tab-button-main" data-tab="3d-view" onclick="showInnerTab('3d-view')">3D View</button>
+                        <button class="tab-button-main" data-tab="heat-loss-results-inner" onclick="showInnerTab('heat-loss-results-inner')">Heat Loss Results</button>
+                    </div>
+
+                    <!-- 2D Drawing Canvas -->
+                    <div id="drawing-content" class="tab-content-main active">
+                        <h3 class="section-title">Draw your room outline</h3>
+                        <p class="info-text">Click to add points. Click near the first point to close the polygon. Drag points to adjust.</p>
+                        <canvas id="drawingCanvas" class="flex-grow"></canvas>
+                        <div class="flex justify-between mt-2">
+                            <span id="drawingAreaDisplay" class="text-gray-700">Area: 0.00 m²</span>
+                            <span id="drawingPerimeterDisplay" class="text-gray-700">Perimeter: 0.00 m</span>
+                        </div>
+                    </div>
+
+                    <!-- 3D View Canvas -->
+                    <div id="3d-view-content" class="tab-content-main">
+                        <h3 class="section-title">3D Room Visualization</h3>
+                        <p class="info-text">Use your mouse to orbit, pan, and zoom. Click on walls to view/edit properties.</p>
+                        <canvas id="threeJsCanvas"></canvas>
+                    </div>
+
+                    <!-- Heat Loss Results -->
+                    <div id="heat-loss-results-inner-content" class="tab-content-main">
+                        <h3 class="section-title">Heat Loss Calculation Results</h3>
+                        <div id="heatLossResult" class="text-xl font-bold text-orange-600 mb-4">Total Heat Loss: -- W</div>
+
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2">Radiator Sizing Parameters</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="input-group mb-0">
+                                <label for="flowTempInput">Flow Temperature (°C):</label>
+                                <input type="number" id="flowTempInput" value="45" step="1" class="rounded-lg">
+                            </div>
+                            <div class="input-group mb-0">
+                                <label for="returnTempInput">Return Temperature (°C):</label>
+                                <input type="number" id="returnTempInput" value="40" step="1" class="rounded-lg">
+                            </div>
+                             <div class="input-group mb-0">
+                                <label for="roomTempInputRadiator">Desired Room Temperature (°C):</label>
+                                <input type="number" id="roomTempInputRadiator" value="20" step="1" class="rounded-lg">
+                            </div>
+                        </div>
+
+                        <div id="radiatorSuggestions" class="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+                            <p class="text-gray-600">Enter room dimensions and click "Calculate Heat Loss" to see radiator suggestions here.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal for Wall Length Input/Properties -->
+                <div id="wallLengthModal" class="modal">
+                    <div class="modal-content">
+                        <h3 class="section-title">Wall Properties</h3>
+                        <p id="modalWallName" class="font-bold text-lg mb-4"></p>
+                        <div class="input-group">
+                            <label for="modalWallLength">Length (m):</label>
+                            <input type="number" id="modalWallLength" step="0.01" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label for="modalWallUValue">U-Value (W/m²K):</label>
+                            <input type="number" id="modalWallUValue" step="0.01" value="0.2">
+                        </div>
+                        <div class="input-group">
+                             <label for="modalWallAdjacencyType">Adjacency:</label>
+                            <select id="modalWallAdjacencyType">
+                                <option value="external">External</option>
+                                <option value="adjacentRoomHeated">Adjacent Room (Heated)</option>
+                                <option value="adjacentRoomUnheated">Adjacent Room (Unheated)</option>
+                            </select>
+                        </div>
+                        <div id="modalAdjacentTempContainer" class="input-group" style="display: none;">
+                            <label for="modalAdjacentTempInput">Adjacent Temperature (°C):</label>
+                            <input type="number" id="modalAdjacentTempInput" step="0.1">
+                        </div>
+
+                        <h4 class="text-md font-semibold text-gray-700 mt-4 mb-2">Windows & Doors for this Wall</h4>
+                        <div id="modalWindowsDoorsContainer" class="space-y-3">
+                            <!-- Dynamic window/door inputs for modal will be added here -->
+                        </div>
+                        <button id="modalAddWindowBtn" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-md font-bold text-white text-sm mt-4">Add Window</button>
+                        <button id="modalAddDoorBtn" class="bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-md font-bold text-white text-sm mt-4">Add Door</button>
+                        
+                        <div class="flex justify-end gap-2 mt-6">
+                            <button id="saveWallProperties" class="bg-green-500 hover:bg-green-600">Save Properties</button>
+                            <button id="cancelWallProperties" class="bg-gray-400 hover:bg-gray-500">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Underfloor Heating Tab -->
+            <div id="ufh-content" class="tab-content">
+                <h2>Underfloor Heating System Design</h2>
+                <p>Use this tool to design underfloor heating systems for individual rooms.</p>
+                <div id="ufh-rooms-container">
+                    <!-- Rooms will be added here dynamically -->
+                </div>
+                <button class="add-room" onclick="ufhTool.addRoom()">Add Room</button>
+                <button onclick="ufhTool.calculateUFH()">Calculate UFH Requirements</button>
+                <div id="ufh-results" class="results">
+                    <h3>Overall UFH Requirements</h3>
+                    <p id="totalPipeLength"></p>
+                    <p id="totalManifolds"></p>
+                </div>
+            </div>
+
+            <!-- Cylinder Sizing Tab -->
+            <div id="cylinder-content" class="tab-content">
+                <h2>Cylinder Sizing (MCS Compliant)</h2>
+                <p>Calculate the appropriate hot water cylinder size based on property occupancy and MCS guidelines.</p>
+                <div class="input-group">
+                    <label for="numBedrooms">Number of Bedrooms:</label>
+                    <input type="number" id="numBedrooms" value="3" min="1" required>
+                </div>
+                <div class="input-group">
+                    <label for="numOccupants">Number of Occupants:</label>
+                    <input type="number" id="numOccupants" value="4" min="1" required>
+                </div>
+                <button onclick="cylinderSizingTool.calculateCylinderSize()">Calculate Cylinder Size</button>
+                <div id="cylinder-results" class="results">
+                    <h3>Cylinder Sizing Results</h3>
+                    <p id="recommendedCylinderSize"></p>
+                    <p class="info-text">Based on MCS Heat Pump Standard 2023.</p>
+                </div>
+            </div>
+
+            <!-- Materials Selection Tab -->
+            <div id="selection-content" class="tab-content">
+                <h2>Materials Selection & BOM Generation</h2>
+                <p>Select components and generate a Bill of Materials for your heat pump installation.</p>
+
+                <div class="intro">
+                    <h3 class="section-title">Heat Pump Selection</h3>
+                    <p>Choose your desired heat pump model. This will influence compatible components.</p>
+                    <div class="input-group">
+                        <label for="heatPumpModel">Heat Pump Model:</label>
+                        <select id="heatPumpModel">
+                            <option value="">-- Select Heat Pump --</option>
+                            <option value="mitsubishi-ecodan-5kw">Mitsubishi Ecodan 5kW</option>
+                            <option value="mitsubishi-ecodan-8kw">Mitsubishi Ecodan 8kW</option>
+                            <option value="grant-aerona3-6kw">Grant Aerona³ 6kW</option>
+                            <option value="grant-aerona3-10kw">Grant Aerona³ 10kW</option>
+                            <option value="vaillant-arotherm-7kw">Vaillant aroTHERM plus 7kW</option>
+                            <option value="samsung-ehs-9kw">Samsung EHS Mono 9kW</option>
+                        </select>
+                    </div>
+                    <p id="heatPumpDetails" class="info-text"></p>
+                </div>
+
+                <div class="intro mt-6">
+                    <h3 class="section-title">System Components</h3>
+                    <p>Select additional components for your system. Quantity will update based on selections.</p>
+                    <div id="componentSelection">
+                        <!-- Components loaded dynamically by selectionTool -->
+                    </div>
+                </div>
+
+                <button onclick="selectionTool.generateBOM()">Generate Bill of Materials</button>
+
+                <div id="bom-results" class="results">
+                    <h3 class="section-title">Bill of Materials</h3>
+                    <table id="bom-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Description</th>
+                                <th>Quantity</th>
+                                <th>Unit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- BOM items will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Documents Tab -->
+            <div id="documents-content" class="tab-content">
+                <h2>Key Documents & Resources</h2>
+                <p>Access important documents, manuals, and guides for heat pump installations.</p>
+
+                <div class="documents-grid">
+                    <div class="document-card">
+                        <h4>MCS Standards Document</h4>
+                        <div class="document-icon">📄</div>
+                        <a href="https://mcscertified.com/wp-content/uploads/2023/04/MCS021-Heat-Pump-Standard-2023.pdf" target="_blank">View PDF</a>
+                        <p>Latest MCS Heat Pump Installation Standard.</p>
+                    </div>
+                    <div class="document-card">
+                        <h4>Building Regulations - Part L</h4>
+                        <div class="document-icon">📜</div>
+                        <a href="https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/1090623/Approved_Document_L_Vol_1_2021.pdf" target="_blank">View PDF</a>
+                        <p>Conservation of Fuel and Power (New Dwellings).</p>
+                    </div>
+                    <div class="document-card">
+                        <h4>Heat Pump Sizing Guide</h4>
+                        <div class="document-icon">📊</div>
+                        <a href="https://www.energysavingtrust.org.uk/sites/default/files/reports/Heatpump%20sizing%20and%20design%20guide_0.pdf" target="_blank">View PDF</a>
+                        <p>Comprehensive guide on heat pump system sizing.</p>
+                    </div>
+                    <div class="document-card">
+                        <h4>Radiator Output Data (Purmo)</h4>
+                        <div class="document-icon">📈</div>
+                        <a href="https://www.purmo.com/docs/default-source/downloads/radiators/purmo-radiator-technical-data-sheet-uk.pdf" target="_blank">View PDF</a>
+                        <p>Technical data for Purmo radiators (output at various ∆T).</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 William Wilson. All rights reserved.</p>
+    </footer>
+
+    <div id="messageBox" class="message-box"></div>
+
+    <script>
+        // Global variables for HeatCalc Pro
+        let roomData = {
+            height: 2.5,
+            internalTemp: 20,
+            externalTemp: -3,
+            ach: 0.5,
+            volume: 0,
+            area: 0,
+            perimeter: 0,
+            walls: [],
+            floor: {},
+            ceiling: {}
+        };
+        let purmoRadiatorData = []; // To be loaded or defined
+
+        // Drawing state
+        let drawingCanvas, drawingCtx;
+        let drawingPoints = [];
+        let isDrawing = false; // True when actively drawing a new line segment
+        let isEditingPoint = false; // True when dragging an existing point
+        let draggedPointIndex = -1;
+        let draggedPointOffset = { x: 0, y: 0 }; // Offset from mouse to point when dragging
+        const pointHitTolerance = 10; // Pixels radius for clicking/dragging points
+        const closeTolerancePixels = 20; // Pixels for closing the polygon
+        const EPSILON = 0.01; // Small value for float comparisons (FIX: Added for robust comparisons)
+        let scaleFactor = 50; // pixels per meter
+        let gridSize = 50; // pixels for grid (1 meter)
+        let snapIncrementMeters = 0.1; // meters
+        let snapIncrementPixels = snapIncrementMeters * scaleFactor; // pixels
+
+        // 3D scene variables
+        let scene, camera, renderer, controls;
+        let roomMesh;
+        let selectedSurfaceMesh = null; // To highlight selected wall/floor/ceiling
+        let wallIndexToEdit = -1;
+        let pointIndexToAdjust = -1; // The point index that was just acted upon for editing or closing
+        let isModalActive = false; // Flag to prevent other interactions when modal is open
+
+        // DOM elements
+        const wallLengthModal = document.getElementById('wallLengthModal');
+        const modalWallLengthInput = document.getElementById('modalWallLength');
+        const modalWallUValueInput = document.getElementById('modalWallUValue');
+        const modalWallAdjacencyTypeSelect = document.getElementById('modalWallAdjacencyType');
+        const modalAdjacentTempContainer = document.getElementById('modalAdjacentTempContainer');
+        const modalAdjacentTempInput = document.getElementById('modalAdjacentTempInput');
+        const saveWallPropertiesBtn = document.getElementById('saveWallProperties');
+        const cancelWallPropertiesBtn = document.getElementById('cancelWallProperties');
+        const modalWindowsDoorsContainer = document.getElementById('modalWindowsDoorsContainer');
+        const modalAddWindowBtn = document.getElementById('modalAddWindowBtn');
+        const modalAddDoorBtn = document.getElementById('modalAddDoorBtn');
+        const messageBox = document.getElementById('messageBox');
+        const surfacePropertiesDisplay = document.getElementById('surfacePropertiesDisplay');
+        const selectedSurfaceNameDisplay = document.getElementById('selectedSurfaceName');
+        const wallUValueInput = document.getElementById('wallUValueInput');
+        const uValuePresetSelect = document.getElementById('uValuePresetSelect');
+        const adjacencyTypeSelect = document.getElementById('adjacencyType');
+        const adjacentTempContainer = document.getElementById('adjacentTempContainer');
+        const adjacentTempInput = document.getElementById('adjacentTempInput');
+        const windowsDoorsContainer = document.getElementById('windowsDoorsContainer');
+        const addWindowBtn = document.getElementById('addWindowBtn');
+        const addDoorBtn = document.getElementById('addDoorBtn');
+
+        // Inner tab elements for Heat Loss Calculator
+        const innerTabButtons = document.querySelectorAll('.tab-buttons-main .tab-button-main');
+        const innerTabContents = document.querySelectorAll('.main-view-tabbed-inner .tab-content-main');
+
+        // Global settings elements
+        const roomHeightInput = document.getElementById('roomHeight');
+        const internalTempInput = document.getElementById('internalTemp');
+        const externalTempInput = document.getElementById('externalTemp');
+        const achInput = document.getElementById('achInput');
+        const applyGlobalSettingsBtn = document.getElementById('applyGlobalSettingsBtn');
+
+        // Results elements
+        const heatLossResultDiv = document.getElementById('heatLossResult');
+        const radiatorSuggestionsDiv = document.getElementById('radiatorSuggestions');
+        const flowTempInput = document.getElementById('flowTempInput');
+        const returnTempInput = document.getElementById('returnTempInput');
+        const roomTempInputRadiator = document.getElementById('roomTempInputRadiator');
+
+
+        // --- Data Definitions (Moved to global scope for easier access) ---
+        // Placeholder Purmo radiator data (should ideally be loaded from a JSON file or API)
+        // This data is simplified for demonstration. Real data would be more extensive.
+        purmoRadiatorData = [
+            // Compact K1 (Type 11)
+            { type: 'Compact K1', height: 300, width: 400, outputDeltaT50: 271, outputDeltaT30: 135 },
+            { type: 'Compact K1', height: 300, width: 600, outputDeltaT50: 406, outputDeltaT30: 203 },
+            { type: 'Compact K1', height: 300, width: 800, outputDeltaT50: 541, outputDeltaT30: 270 },
+            { type: 'Compact K1', height: 300, width: 1000, outputDeltaT50: 676, outputDeltaT30: 338 },
+            { type: 'Compact K1', height: 300, width: 1200, outputDeltaT50: 811, outputDeltaT30: 405 },
+            { type: 'Compact K1', height: 300, width: 1400, outputDeltaT50: 946, outputDeltaT30: 473 },
+            { type: 'Compact K1', height: 300, width: 1600, outputDeltaT50: 1081, outputDeltaT30: 540 },
+            { type: 'Compact K1', height: 300, width: 1800, outputDeltaT50: 1216, outputDeltaT30: 608 },
+            { type: 'Compact K1', height: 300, width: 2000, outputDeltaT50: 1351, outputDeltaT30: 675 },
+
+            { type: 'Compact K1', height: 400, width: 400, outputDeltaT50: 341, outputDeltaT30: 170 },
+            { type: 'Compact K1', height: 400, width: 600, outputDeltaT50: 511, outputDeltaT30: 255 },
+            { type: 'Compact K1', height: 400, width: 800, outputDeltaT50: 682, outputDeltaT30: 341 },
+            { type: 'Compact K1', height: 400, width: 1000, outputDeltaT50: 852, outputDeltaT30: 426 },
+            { type: 'Compact K1', height: 400, width: 1200, outputDeltaT50: 1022, outputDeltaT30: 511 },
+            { type: 'Compact K1', height: 400, width: 1400, outputDeltaT50: 1193, outputDeltaT30: 596 },
+            { type: 'Compact K1', height: 400, width: 1600, outputDeltaT50: 1363, outputDeltaT30: 681 },
+            { type: 'Compact K1', height: 400, width: 1800, outputDeltaT50: 1533, outputDeltaT30: 766 },
+            { type: 'Compact K1', height: 400, width: 2000, outputDeltaT50: 1704, outputDeltaT30: 852 },
+
+            { type: 'Compact K1', height: 500, width: 400, outputDeltaT50: 412, outputDeltaT30: 206 },
+            { type: 'Compact K1', height: 500, width: 600, outputDeltaT50: 618, outputDeltaT30: 309 },
+            { type: 'Compact K1', height: 500, width: 800, outputDeltaT50: 824, outputDeltaT30: 412 },
+            { type: 'Compact K1', height: 500, width: 1000, outputDeltaT50: 1029, outputDeltaT30: 514 },
+            { type: 'Compact K1', height: 500, width: 1200, outputDeltaT50: 1235, outputDeltaT30: 617 },
+            { type: 'Compact K1', height: 500, width: 1400, outputDeltaT50: 1441, outputDeltaT30: 720 },
+            { type: 'Compact K1', height: 500, width: 1600, outputDeltaT50: 1647, outputDeltaT30: 823 },
+            { type: 'Compact K1', height: 500, width: 1800, outputDeltaT50: 1853, outputDeltaT30: 926 },
+            { type: 'Compact K1', height: 500, width: 2000, outputDeltaT50: 2059, outputDeltaT30: 1029 },
+            
+            { type: 'Compact K1', height: 600, width: 400, outputDeltaT50: 483, outputDeltaT30: 241 },
+            { type: 'Compact K1', height: 600, width: 600, outputDeltaT50: 725, outputDeltaT30: 362 },
+            { type: 'Compact K1', height: 600, width: 800, outputDeltaT50: 967, outputDeltaT30: 483 },
+            { type: 'Compact K1', height: 600, width: 1000, outputDeltaT50: 1208, outputDeltaT30: 604 },
+            { type: 'Compact K1', height: 600, width: 1200, outputDeltaT50: 1450, outputDeltaT30: 725 },
+            { type: 'Compact K1', height: 600, width: 1400, outputDeltaT50: 1692, outputDeltaT30: 846 },
+            { type: 'Compact K1', height: 600, width: 1600, outputDeltaT50: 1934, outputDeltaT30: 967 },
+            { type: 'Compact K1', height: 600, width: 1800, outputDeltaT50: 2176, outputDeltaT30: 1088 },
+            { type: 'Compact K1', height: 600, width: 2000, outputDeltaT50: 2418, outputDeltaT30: 1209 },
+
+            { type: 'Compact K1', height: 700, width: 400, outputDeltaT50: 554, outputDeltaT30: 277 },
+            { type: 'Compact K1', height: 700, width: 600, outputDeltaT50: 831, outputDeltaT30: 415 },
+            { type: 'Compact K1', height: 700, width: 800, outputDeltaT50: 1108, outputDeltaT30: 554 },
+            { type: 'Compact K1', height: 700, width: 1000, outputDeltaT50: 1385, outputDeltaT30: 692 },
+            { type: 'Compact K1', height: 700, width: 1200, outputDeltaT50: 1662, outputDeltaT30: 831 },
+            { type: 'Compact K1', height: 700, width: 1400, outputDeltaT50: 1939, outputDeltaT30: 969 },
+            { type: 'Compact K1', height: 700, width: 1600, outputDeltaT50: 2216, outputDeltaT30: 1108 },
+            { type: 'Compact K1', height: 700, width: 1800, outputDeltaT50: 2493, outputDeltaT30: 1246 },
+            { type: 'Compact K1', height: 700, width: 2000, outputDeltaT50: 2770, outputDeltaT30: 1385 },
+
+            { type: 'Compact K1', height: 900, width: 400, outputDeltaT50: 695, outputDeltaT30: 347 },
+            { type: 'Compact K1', height: 900, width: 600, outputDeltaT50: 1042, outputDeltaT30: 521 },
+            { type: 'Compact K1', height: 900, width: 800, outputDeltaT50: 1389, outputDeltaT30: 695 },
+            { type: 'Compact K1', height: 900, width: 1000, outputDeltaT50: 1736, outputDeltaT30: 868 },
+            { type: 'Compact K1', height: 900, width: 1200, outputDeltaT50: 2083, outputDeltaT30: 1041 },
+            { type: 'Compact K1', height: 900, width: 1400, outputDeltaT50: 2430, outputDeltaT30: 1215 },
+            { type: 'Compact K1', height: 900, width: 1600, outputDeltaT50: 2777, outputDeltaT30: 1388 },
+            { type: 'Compact K1', height: 900, width: 1800, outputDeltaT50: 3124, outputDeltaT30: 1562 },
+            { type: 'Compact K1', height: 900, width: 2000, outputDeltaT50: 3471, outputDeltaT30: 1735 },
+
+            // Compact P1 (Type 21) - Placeholder examples, scale outputs from K1
+            { type: 'Compact P1', height: 300, width: 400, outputDeltaT50: 440, outputDeltaT30: 220 }, // Example output, adjust based on real data
+            { type: 'Compact P1', height: 500, width: 1000, outputDeltaT50: 1650, outputDeltaT30: 825 },
+            { type: 'Compact P1', height: 600, width: 1200, outputDeltaT50: 2350, outputDeltaT30: 1175 },
+
+            // Compact T22 (Type 22) - Placeholder examples, scale outputs from K1
+            { type: 'Compact T22', height: 300, width: 400, outputDeltaT50: 550, outputDeltaT30: 275 }, // Example output, adjust based on real data
+            { type: 'Compact T22', height: 500, width: 1000, outputDeltaT50: 2000, outputDeltaT30: 1000 },
+            { type: 'Compact T22', height: 600, width: 1200, outputDeltaT50: 2800, outputDeltaT30: 1400 },
+        ];
+
+
+        // --- HeatCalc Pro Core Logic ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            drawingCanvas = document.getElementById('drawingCanvas');
+            drawingCtx = drawingCanvas.getContext('2d');
+
+            // Event Listeners for 2D Drawing
+            drawingCanvas.addEventListener('mousedown', onDrawingMouseDown);
+            drawingCanvas.addEventListener('mousemove', onDrawingMouseMove);
+            drawingCanvas.addEventListener('mouseup', onDrawingMouseUp);
+            drawingCanvas.addEventListener('mouseout', onDrawingMouseUp); // End drag if mouse leaves canvas
+
+            document.getElementById('clearDrawingBtn').addEventListener('click', clearDrawing);
+            document.getElementById('addRoomBtn').addEventListener('click', startNewRoomDrawing);
+
+            // Event Listeners for Global Settings
+            applyGlobalSettingsBtn.addEventListener('click', () => {
+                roomData.height = parseFloat(roomHeightInput.value);
+                roomData.internalTemp = parseFloat(internalTempInput.value);
+                roomData.externalTemp = parseFloat(externalTempInput.value);
+                roomData.ach = parseFloat(achInput.value);
+                showMessageBox('Global room settings applied!', 1500);
+                // Update 3D model if it's currently displayed
+                if (document.getElementById('3d-view-content').classList.contains('active')) { // FIX: Use -content ID
+                    if (drawingPoints.length > 2 && Math.abs(drawingPoints[0].x - drawingPoints[drawingPoints.length - 1].x) < EPSILON && Math.abs(drawingPoints[0].y - drawingPoints[drawingPoints.length - 1].y) < EPSILON) { // Check if polygon is closed
+                        process2DDrawingToRoomData(); // Ensure roomData.walls is updated
+                        update3DModelFromRoomData();
+                    }
+                }
+            });
+
+            // Event Listeners for Heat Loss & Radiator Sizing
+            document.getElementById('calculateHeatLossBtn').addEventListener('click', calculateHeatLoss);
+
+            // Event listeners for current surface properties (when selected in 3D)
+            wallUValueInput.addEventListener('change', updateSelectedSurfaceProperties);
+            uValuePresetSelect.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    wallUValueInput.value = e.target.value;
+                    updateSelectedSurfaceProperties();
+                }
+            });
+            adjacencyTypeSelect.addEventListener('change', (e) => {
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                const tempPreset = selectedOption.dataset.tempPreset;
+                if (tempPreset && tempPreset !== 'auto') {
+                    adjacentTempInput.value = tempPreset;
+                    adjacentTempContainer.style.display = 'block';
+                } else if (e.target.value === 'adjacentRoomHeated' || e.target.value === 'adjacentRoomUnheated' || e.target.value === 'unheatedSpace') {
+                     adjacentTempContainer.style.display = 'block';
+                     if (!tempPreset) adjacentTempInput.value = ''; // Clear if no specific preset
+                }
+                else {
+                    adjacentTempContainer.style.display = 'none';
+                    adjacentTempInput.value = '';
+                }
+                updateSelectedSurfaceProperties();
+            });
+            adjacentTempInput.addEventListener('change', updateSelectedSurfaceProperties);
+
+            addWindowBtn.addEventListener('click', () => addWindowOrDoorInput('window', windowsDoorsContainer));
+            addDoorBtn.addEventListener('click', () => addWindowOrDoorInput('door', windowsDoorsContainer));
+
+            // Event Listeners for Modal
+            saveWallPropertiesBtn.addEventListener('click', saveModalWallProperties);
+            cancelWallPropertiesBtn.addEventListener('click', cancelModalWallProperties);
+            modalWallAdjacencyTypeSelect.addEventListener('change', (e) => {
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                const tempPreset = selectedOption.dataset.tempPreset;
+                if (tempPreset && tempPreset !== 'auto') {
+                    modalAdjacentTempInput.value = tempPreset;
+                    modalAdjacentTempContainer.style.display = 'block';
+                } else if (e.target.value === 'adjacentRoomHeated' || e.target.value === 'adjacentRoomUnheated' || e.target.value === 'unheatedSpace') {
+                     modalAdjacentTempContainer.style.display = 'block';
+                     if (!tempPreset) modalAdjacentTempInput.value = '';
+                }
+                else {
+                    modalAdjacentTempContainer.style.display = 'none';
+                    modalAdjacentTempInput.value = '';
+                }
+            });
+            modalAddWindowBtn.addEventListener('click', () => addWindowOrDoorInput('window', modalWindowsDoorsContainer));
+            modalAddDoorBtn.addEventListener('click', () => addWindowOrDoorInput('door', modalWindowsDoorsContainer));
+
+
+            // Initialize inner tab buttons
+            innerTabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    showInnerTab(button.dataset.tab);
+                });
+            });
+
+            // Initialize scale and snap increment inputs/ranges
+            const scaleFactorInput = document.getElementById('scaleFactorInput');
+            scaleFactorInput.addEventListener('change', (e) => {
+                scaleFactor = parseFloat(e.target.value);
+                gridSize = scaleFactor; // 1 meter grid
+                snapIncrementPixels = snapIncrementMeters * scaleFactor; // Recalculate snap pixels
+                drawRoomOutline();
+                // If 3D view is active, recreate and update as scale affects dimensions
+                if (document.getElementById('3d-view-content').classList.contains('active')) { // FIX: Use -content ID
+                    if (roomData.walls && roomData.walls.length > 0) {
+                        process2DDrawingToRoomData(); // Re-process with new scale
+                        update3DModelFromRoomData();
+                    }
+                }
+            });
+
+            const snapIncrementInput = document.getElementById('snapIncrementInput');
+            const snapIncrementRange = document.getElementById('snapIncrementRange');
+
+            snapIncrementInput.addEventListener('change', (e) => {
+                snapIncrementMeters = parseFloat(e.target.value);
+                snapIncrementRange.value = e.target.value;
+                snapIncrementPixels = snapIncrementMeters * scaleFactor; // Recalculate snap pixels
+                drawRoomOutline();
+            });
+            snapIncrementRange.addEventListener('input', (e) => {
+                snapIncrementInput.value = e.target.value;
+                snapIncrementMeters = parseFloat(e.target.value);
+                snapIncrementPixels = snapIncrementMeters * scaleFactor; // Recalculate snap pixels
+                drawRoomOutline();
+            });
+
+            // Global window resize listener for the HeatCalc Pro canvases
+            window.addEventListener('resize', () => {
+                // Check which *inner* tab is active and resize the appropriate canvas
+                if (document.getElementById('drawing-content').classList.contains('active')) { // FIX: Use -content ID
+                    resizeDrawingCanvas();
+                } else if (document.getElementById('3d-view-content').classList.contains('active')) { // FIX: Use -content ID
+                    onWindowResize3D();
+                }
+            });
+
+            // Initialize tools for the Design Hub
+            ufhTool.addRoom();
+            selectionTool.loadSetups();
+
+            // Set initial tab to home
+            openTab('home'); // FIX: Pass only the base name
+        });
+
+        // --- Utility Functions ---
+        /**
+         * Displays a temporary message box.
+         * @param {string} message - The message to display.
+         * @param {number} duration - Duration in milliseconds to show the message.
+         */
+        function showMessageBox(message, duration = 2000) {
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, duration);
+        }
+
+        /**
+         * Calculates the distance between two 2D points.
+         * @param {object} p1 - First point {x, y}.
+         * @param {object} p2 - Second point {x, y}.
+         * @returns {number} Distance in meters.
+         */
+        function calculateDistance(p1, p2) {
+            const dx = (p2.x - p1.x) / scaleFactor;
+            const dy = (p2.y - p1.y) / scaleFactor;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        /**
+         * Calculates the area of a polygon given its vertices using the Shoelace Formula.
+         * Converts canvas coordinates to meters before calculation.
+         * @param {Array<object>} points - Array of points {x, y} in canvas coordinates.
+         * @returns {number} Area in square meters.
+         */
+        function calculatePolygonArea(points) {
+            let area = 0;
+            const numPoints = points.length;
+            // Use only unique points for area calculation if the last point is a duplicate of the first
+            let effectivePoints = points;
+            if (numPoints > 1 && Math.abs(points[0].x - points[numPoints - 1].x) < EPSILON && Math.abs(points[0].y - points[numPoints - 1].y) < EPSILON) { // FIX: Use EPSILON
+                effectivePoints = points.slice(0, numPoints - 1);
+            }
+            if (effectivePoints.length < 3) return 0; // Not a polygon
+
+            for (let i = 0; i < effectivePoints.length; i++) {
+                const p1 = effectivePoints[i];
+                const p2 = effectivePoints[(i + 1) % effectivePoints.length];
+                // Convert to meters before calculation (relative to canvas center)
+                const x1_m = (p1.x - drawingCanvas.width / 2) / scaleFactor;
+                const y1_m = (p1.y - drawingCanvas.height / 2) / scaleFactor;
+                const x2_m = (p2.x - drawingCanvas.width / 2) / scaleFactor;
+                const y2_m = (p2.y - drawingCanvas.height / 2) / scaleFactor;
+                area += (x1_m * y2_m - x2_m * y1_m);
+            }
+            return Math.abs(area / 2);
+        }
+
+        /**
+         * Generates a unique ID for walls/objects.
+         * @returns {string} Unique ID.
+         */
+        function generateUniqueId() {
+            return 'obj-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        }
+
+        /**
+         * Snaps a coordinate to the nearest increment.
+         * @param {number} coord - The coordinate value.
+         * @param {number} increment - The pixel increment to snap to.
+         * @returns {number} The snapped coordinate value.
+         */
+        function snapCoordinate(coord, increment) {
+            return Math.round(coord / increment) * increment;
+        }
+
+
+        // --- UI View Management (Inner Tabs) ---
+        /**
+         * Switches between inner tabs (2D Drawing, 3D View, Heat Loss Results) within the Heat Loss Calculator.
+         * @param {string} tabId - The ID of the tab to show ('drawing', '3d-view', 'heat-loss-results-inner').
+         */
+        function showInnerTab(tabId) {
+            innerTabButtons.forEach(button => {
+                // The data-tab attribute now corresponds to the ID of the div to show
+                if (button.dataset.tab === tabId) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+
+            innerTabContents.forEach(content => {
+                if (content.id === `${tabId}-content`) { // FIX: Use -content ID
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+
+            // Specific actions when switching tabs
+            if (tabId === 'drawing') { // Changed to 'drawing' for consistency
+                resizeDrawingCanvas(); // Ensure 2D canvas is correctly sized
+                drawRoomOutline(); // Redraw 2D
+                // Hide surface properties panel when returning to 2D
+                surfacePropertiesDisplay.style.display = 'none';
+            } else if (tabId === '3d-view') { // Changed to '3d-view' for consistency
+                init3D(); // Re-initialize 3D on tab switch to ensure it's ready
+                onWindowResize3D(); // Ensure 3D canvas is correctly sized
+                // The render3DModel call within init3D will handle initial rendering
+            } else if (tabId === 'heat-loss-results-inner') { // Updated to new ID
+                // Hide surface properties panel when going to heat loss results
+                surfacePropertiesDisplay.style.display = 'none';
+            }
+        }
+
+
+        // --- 2D Drawing Logic ---
+        /**
+         * Resizes the 2D drawing canvas to fit its container.
+         */
+        function resizeDrawingCanvas() {
+            const container = drawingCanvas.parentElement;
+            drawingCanvas.width = container.clientWidth;
+            drawingCanvas.height = container.clientHeight;
+            drawRoomOutline(); // Redraw after resize
+        }
+
+        /**
+         * Draws the grid on the 2D canvas.
+         */
+        function drawGrid() {
+            drawingCtx.strokeStyle = '#e0e0e0'; // Light gray for grid lines
+            drawingCtx.lineWidth = 0.5;
+
+            // Draw vertical lines
+            for (let x = 0; x <= drawingCanvas.width; x += gridSize) {
+                drawingCtx.beginPath();
+                drawingCtx.moveTo(x, 0);
+                drawingCtx.lineTo(x, drawingCanvas.height);
+                drawingCtx.stroke();
+            }
+
+            // Draw horizontal lines
+            for (let y = 0; y <= drawingCanvas.height; y += gridSize) {
+                drawingCtx.beginPath();
+                drawingCtx.moveTo(0, y);
+                drawingCtx.lineTo(drawingCanvas.width, y);
+                drawingCtx.stroke();
+            }
+        }
+
+        /**
+         * Draws the current room outline on the 2D canvas.
+         */
+        function drawRoomOutline() {
+            drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCtx.canvas.height);
+            drawGrid(); // Draw the grid first
+
+            drawingCtx.strokeStyle = '#333';
+            drawingCtx.lineWidth = 2;
+
+            if (drawingPoints.length > 0) {
+                drawingCtx.beginPath();
+                drawingCtx.moveTo(drawingPoints[0].x, drawingPoints[0].y);
+                for (let i = 1; i < drawingPoints.length; i++) {
+                    drawingCtx.lineTo(drawingPoints[i].x, drawingPoints[i].y);
+                }
+
+                // If actively drawing, don't close yet, just show the current segment
+                const firstPoint = drawingPoints[0];
+                const lastPoint = drawingPoints[drawingPoints.length - 1];
+                const isPolygonClosedByCoords = (firstPoint && lastPoint && Math.abs(firstPoint.x - lastPoint.x) < EPSILON && Math.abs(firstPoint.y - lastPoint.y) < EPSILON); // FIX: Use EPSILON
+
+                if (!isDrawing && drawingPoints.length > 2 && isPolygonClosedByCoords) {
+                    drawingCtx.closePath(); // Close the polygon if not drawing and enough points and loop is closed
+                }
+                drawingCtx.stroke();
+
+                // Draw points and their indices
+                drawingPoints.forEach((p, index) => {
+                    drawingCtx.beginPath();
+                    // Make points slightly larger for easier clicking
+                    drawingCtx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                    drawingCtx.fillStyle = '#4CAF50';
+                    drawingCtx.fill();
+                    drawingCtx.strokeStyle = '#2e8b57';
+                    drawingCtx.lineWidth = 1;
+                    drawingCtx.stroke();
+
+                    // Display point index for debugging/clarity
+                    if (index < drawingPoints.length - 1 || !isPolygonClosedByCoords) {
+                        drawingCtx.fillStyle = '#000';
+                        drawingCtx.font = '10px Arial';
+                        drawingCtx.textAlign = 'center';
+                        drawingCtx.textBaseline = 'middle';
+                        drawingCtx.fillText(index.toString(), p.x, p.y - 10);
+                    }
+                });
+
+                // Display wall lengths on the 2D canvas if the polygon is closed
+                if (!isDrawing && drawingPoints.length > 2 && isPolygonClosedByCoords) {
+                    const effectivePoints = drawingPoints.slice(0, drawingPoints.length - 1);
+                    for (let i = 0; i < effectivePoints.length; i++) {
+                        const p1 = effectivePoints[i];
+                        const p2 = effectivePoints[(i + 1) % effectivePoints.length];
+                        const segmentLength = calculateDistance(p1, p2);
+                        const midX = (p1.x + p2.x) / 2;
+                        const midY = (p1.y + p2.y) / 2;
+
+                        drawingCtx.fillStyle = '#000';
+                        drawingCtx.font = '12px Arial';
+                        drawingCtx.textAlign = 'center';
+                        drawingCtx.textBaseline = 'middle';
+                        drawingCtx.fillText(`${segmentLength.toFixed(2)} m`, midX, midY - 10);
+                    }
+                }
+            }
+            updateDrawingInfo();
+        }
+
+        /**
+         * Finds if a point is clicked within tolerance.
+         * @param {object} mousePos - Current mouse position {x, y}.
+         * @returns {number} Index of the clicked point, or -1 if none.
+         */
+        function getClickedPointIndex(mousePos) {
+            // Iterate over unique points (excluding the duplicate closing point if present)
+            const numUniquePoints = drawingPoints.length > 1 && Math.abs(drawingPoints[0].x - drawingPoints[drawingPoints.length - 1].x) < EPSILON && Math.abs(drawingPoints[0].y - drawingPoints[drawingPoints.length - 1].y) < EPSILON ? drawingPoints.length - 1 : drawingPoints.length; // FIX: Use EPSILON
+            for (let i = 0; i < numUniquePoints; i++) {
+                const p = drawingPoints[i];
+                const dist = Math.sqrt(Math.pow(mousePos.x - p.x, 2) + Math.pow(mousePos.y - p.y, 2));
+                if (dist < pointHitTolerance) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /**
+         * Snaps a given point to be horizontal or vertical relative to a reference point.
+         * @param {object} currentPoint - The point to snap {x, y}.
+         * @param {object} referencePoint - The point to snap relative to {x, y}.
+         * @returns {object} The snapped point {x, y}.
+         */
+        function snapToOrthogonal(currentPoint, referencePoint) {
+            const dx = Math.abs(currentPoint.x - referencePoint.x);
+            const dy = Math.abs(currentPoint.y - referencePoint.y);
+
+            if (dx < dy) { // Closer to vertical
+                currentPoint.x = referencePoint.x;
+            } else { // Closer to horizontal (or equal)
+                currentPoint.y = referencePoint.y;
+            }
+            return currentPoint;
+        }
+
+        /**
+         * Handles mouse down event on 2D canvas to start drawing or add points.
+         * @param {MouseEvent} event - The mouse event.
+         */
+        function onDrawingMouseDown(event) {
+            if (isModalActive) return; // Prevent interaction if modal is open
+
+            const rect = drawingCanvas.getBoundingClientRect();
+            let x = event.clientX - rect.left;
+            let y = event.clientY - rect.top;
+            let clickPoint = { x, y };
+
+            const clickedPointIndex = getClickedPointIndex(clickPoint);
+
+            // Check if an existing point is being clicked for dragging
+            draggedPointIndex = clickedPointIndex;
+            if (draggedPointIndex !== -1 && !isDrawing) {
+                // Only allow dragging if not actively drawing a new line
+                isEditingPoint = true;
+                draggedPointOffset = { x: clickPoint.x - drawingPoints[draggedPointIndex].x, y: clickPoint.y - drawingPoints[draggedPointIndex].y };
+                drawingCanvas.style.cursor = 'grabbing';
+                return; // Stop here, we are dragging a point
+            }
+
+            // If not dragging an existing point, proceed with drawing new points
+            const hasEnoughPointsToClose = drawingPoints.length >= 2;
+            const firstPoint = drawingPoints[0];
+            const lastPoint = drawingPoints[drawingPoints.length - 1];
+            const isPolygonClosedByCoords = (firstPoint && lastPoint && Math.abs(firstPoint.x - lastPoint.x) < EPSILON && Math.abs(firstPoint.y - lastPoint.y) < EPSILON); // FIX: Use EPSILON
+
+            // Bug Fix 1: Refined polygon closing logic
+            // Check if the user is trying to close the polygon (click near the first point)
+            if (hasEnoughPointsToClose && Math.abs(clickPoint.x - drawingPoints[0].x) < closeTolerancePixels && Math.abs(clickPoint.y - drawingPoints[0].y) < closeTolerancePixels) {
+                // If polygon is already closed, show message and do nothing
+                if (!isDrawing && isPolygonClosedByCoords) {
+                    showMessageBox("Room outline already drawn. Drag points to edit or clear drawing to start a new one.", 3000);
+                    return;
+                }
+
+                // Explicitly close the polygon if actively drawing
+                const finalClosingPoint = { x: drawingPoints[0].x, y: drawingPoints[0].y };
+                drawingPoints.push(finalClosingPoint);
+                isDrawing = false; // Drawing is now finished
+                drawRoomOutline();
+
+                // Trigger modal for the last wall (which is now the closing wall)
+                wallIndexToEdit = drawingPoints.length - 2; // Index of the wall that was just closed
+                pointIndexToAdjust = drawingPoints.length - 1; // The closing point (same as point 0)
+
+                // Ensure roomData.walls is populated before showing modal
+                if (wallIndexToEdit >= 0 && process2DDrawingToRoomData()) { // FIX: Add check for valid wallIndexToEdit
+                    isModalActive = true;
+                    showWallLengthModal(roomData.walls[wallIndexToEdit]);
+                }
+                return; // Action complete
+            }
+
+            // Bug Fix 1: Removed logic that clears drawing if a closed polygon exists and user clicks
+            // If the user clicks and a polygon is already closed, and it's not a drag, do nothing or provide feedback.
+            if (!isDrawing && drawingPoints.length > 0 && isPolygonClosedByCoords) { // FIX: Use EPSILON
+                showMessageBox("Room outline completed. Drag existing points to modify or click 'Clear Drawing' to start a new one.", 3000);
+                return;
+            }
+
+            // For new points: first snap to orthogonal, then to grid
+            if (drawingPoints.length > 0) {
+                clickPoint = snapToOrthogonal(clickPoint, drawingPoints[drawingPoints.length - 1]);
+            }
+            clickPoint.x = snapCoordinate(clickPoint.x, snapIncrementPixels);
+            clickPoint.y = snapCoordinate(clickPoint.y, snapIncrementPixels);
+
+            // Add the new point
+            drawingPoints.push(clickPoint);
+            isDrawing = true; // Mark drawing as active
+            drawRoomOutline(); // Redraw to show the new point
+        }
+
+        /**
+         * Handles mouse move event on 2D canvas to show temporary line while drawing or drag point.
+         * @param {MouseEvent} event - The mouse event.
+         */
+        function onDrawingMouseMove(event) {
+            if (isModalActive) return; // Prevent interaction if modal is open
+
+            const rect = drawingCanvas.getBoundingClientRect();
+            let x = event.clientX - rect.left;
+            let y = event.clientY - rect.top;
+            let currentMousePoint = { x, y };
+
+            if (isEditingPoint && draggedPointIndex !== -1) {
+                // When dragging, simply snap the dragged point to the grid based on current mouse position.
+                // This gives the user direct control without aggressive orthogonal snapping during drag.
+                drawingPoints[draggedPointIndex].x = snapCoordinate(x, snapIncrementPixels);
+                drawingPoints[draggedPointIndex].y = snapCoordinate(y, snapIncrementPixels);
+
+                // If the last point is a duplicate of the first (closed polygon), update it too
+                // This ensures the polygon remains closed when the start point is dragged.
+                // FIX: Use EPSILON for this comparison
+                if (draggedPointIndex === 0 && drawingPoints.length > 1 && Math.abs(drawingPoints[0].x - drawingPoints[drawingPoints.length - 1].x) < EPSILON && Math.abs(drawingPoints[0].y - drawingPoints[drawingPoints.length - 1].y) < EPSILON) {
+                    drawingPoints[drawingPoints.length - 1].x = drawingPoints[0].x;
+                    drawingPoints[drawingPoints.length - 1].y = drawingPoints[0].y;
+                }
+                drawRoomOutline(); // Redraw to show the new point position
+                return;
+            }
+
+            if (!isDrawing) {
+                // Change cursor to grab if hovering over a point when not drawing
+                const hoverPoint = { x, y };
+                if (getClickedPointIndex(hoverPoint) !== -1) {
+                    drawingCanvas.style.cursor = 'grab';
+                } else {
+                    drawingCanvas.style.cursor = 'crosshair';
+                }
+                return;
+            }
+
+            drawRoomOutline(); // Clear and redraw existing lines
+
+            // Apply orthogonal snapping for the temporary line (when drawing new segments), then grid snap
+            const lastPoint = drawingPoints[drawingPoints.length - 1];
+            let snappedCurrentMousePoint = snapToOrthogonal({ x, y }, lastPoint);
+            snappedCurrentMousePoint.x = snapCoordinate(snappedCurrentMousePoint.x, snapIncrementPixels);
+            snappedCurrentMousePoint.y = snapCoordinate(snappedCurrentMousePoint.y, snapIncrementPixels);
+
+            // Draw a temporary line from the last point to the current mouse position
+            drawingCtx.beginPath();
+            drawingCtx.moveTo(lastPoint.x, lastPoint.y);
+            drawingCtx.lineTo(snappedCurrentMousePoint.x, snappedCurrentMousePoint.y);
+            drawingCtx.strokeStyle = '#888';
+            drawingCtx.setLineDash([5, 5]); // Dashed line
+            drawingCtx.stroke();
+            drawingCtx.setLineDash([]); // Reset line dash
+        }
+
+        /**
+         * Handles mouse up event on 2D canvas to stop drawing or dragging.
+         * @param {MouseEvent} event - The mouse event.
+         */
+        function onDrawingMouseUp(event) {
+            if (isModalActive) return; // Prevent interaction if modal is open
+
+            if (isEditingPoint) {
+                isEditingPoint = false;
+                draggedPointIndex = -1;
+                drawingCanvas.style.cursor = 'crosshair';
+                // After dragging, re-process room data and update 3D model
+                // Only process and update 3D if the polygon is currently closed
+                if (drawingPoints.length > 2 && Math.abs(drawingPoints[0].x - drawingPoints[drawingPoints.length - 1].x) < EPSILON && Math.abs(drawingPoints[0].y - drawingPoints[drawingPoints.length - 1].y) < EPSILON) { // FIX: Use EPSILON
+                    if (process2DDrawingToRoomData()) { // FIX: Ensure this is called and updates roomData
+                        update3DModelFromRoomData();
+                    }
+                }
+                drawRoomOutline(); // Final redraw after drag
+                return;
+            }
+            // No action needed for mouse up if not dragging or drawing.
+        }
+
+        /**
+         * Starts a new room drawing, clearing any existing drawing.
+         */
+        function startNewRoomDrawing() {
+            clearDrawing();
+            showMessageBox('Start drawing your room outline by clicking on the canvas.', 3000);
+        }
+
+        /**
+         * Clears the 2D drawing canvas and resets drawing state.
+         */
+        function clearDrawing() {
+            drawingPoints = [];
+            isDrawing = false;
+            isEditingPoint = false;
+            draggedPointIndex = -1;
+            drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            drawGrid(); // Redraw grid
+            roomData.walls = []; // Clear walls in roomData
+            roomData.area = 0;
+            roomData.perimeter = 0;
+            roomData.volume = 0;
+            updateDrawingInfo();
+            // Clear 3D model
+            clear3DModel();
+            // Hide surface properties panel
+            surfacePropertiesDisplay.style.display = 'none';
+            showMessageBox('Drawing cleared. You can start a new drawing.', 2000);
+        }
+
+        /**
+         * Updates the displayed area and perimeter.
+         */
+        function updateDrawingInfo() {
+            const area = calculatePolygonArea(drawingPoints);
+            document.getElementById('drawingAreaDisplay').textContent = `Area: ${area.toFixed(2)} m²`;
+            let perimeter = 0;
+            const effectivePoints = drawingPoints.length > 1 && Math.abs(drawingPoints[0].x - drawingPoints[drawingPoints.length - 1].x) < EPSILON && Math.abs(drawingPoints[0].y - drawingPoints[drawingPoints.length - 1].y) < EPSILON ? drawingPoints.slice(0, drawingPoints.length - 1) : drawingPoints; // FIX: Use EPSILON
+            if (effectivePoints.length > 1) {
+                for (let i = 0; i < effectivePoints.length; i++) {
+                    const p1 = effectivePoints[i];
+                    const p2 = effectivePoints[(i + 1) % effectivePoints.length];
+                    perimeter += calculateDistance(p1, p2);
+                }
+            }
+            document.getElementById('drawingPerimeterDisplay').textContent = `Perimeter: ${perimeter.toFixed(2)} m`;
+
+            roomData.area = area;
+            roomData.perimeter = perimeter;
+            roomData.volume = area * roomData.height; // Update volume based on new area
+        }
+
+        /**
+         * Processes the 2D drawing points into structured room data (walls, floor, ceiling).
+         * This function should be called whenever the 2D drawing changes to update roomData.
+         * @returns {boolean} True if room data was successfully processed, false otherwise.
+         */
+        function process2DDrawingToRoomData() {
+            // FIX: Use EPSILON for float comparison here as well
+            if (drawingPoints.length < 3 || !(Math.abs(drawingPoints[0].x - drawingPoints[drawingPoints.length - 1].x) < EPSILON && Math.abs(drawingPoints[0].y - drawingPoints[drawingPoints.length - 1].y) < EPSILON)) {
+                // Polygon not closed or not enough points
+                roomData.walls = [];
+                roomData.floor = {};
+                roomData.ceiling = {};
+                roomData.area = 0;
+                roomData.perimeter = 0;
+                roomData.volume = 0;
+                return false;
+            }
+
+            const uniquePoints = drawingPoints.slice(0, drawingPoints.length - 1); // Exclude duplicate closing point
+            
+            // Create a temporary array for new walls to avoid modifying roomData.walls directly during iteration
+            const newWalls = [];
+
+            for (let i = 0; i < uniquePoints.length; i++) {
+                const p1 = uniquePoints[i];
+                const p2 = uniquePoints[(i + 1) % uniquePoints.length]; // Connect last point to first
+
+                const length = calculateDistance(p1, p2); // Length in meters
+
+                // Initialize default wall properties
+                let wallProperties = {
+                    id: generateUniqueId(), // Always generate new ID for new walls
+                    name: `Wall ${i + 1}`,
+                    length: length,
+                    height: roomData.height,
+                    uValue: 0.2, // Default U-Value for external wall
+                    adjacencyType: 'external',
+                    adjacentTemp: null,
+                    doors: [],
+                    windows: []
+                };
+
+                // Try to find existing wall properties by index/name to preserve user edits
+                // This is a simplified merge. In a real app, you'd use wall IDs for robust matching.
+                if (roomData.walls[i] && roomData.walls[i].name === `Wall ${i + 1}`) {
+                    // Update dynamic properties (length, height), keep user-edited static ones
+                    wallProperties = { ...roomData.walls[i], ...wallProperties }; // Merge, new properties overwrite old if applicable
+                    wallProperties.length = length;
+                    wallProperties.height = roomData.height;
+                }
+                newWalls.push(wallProperties);
+            }
+            roomData.walls = newWalls; // Assign the newly processed walls
+
+            // Define floor and ceiling properties (area calculated from polygon)
+            roomData.area = calculatePolygonArea(drawingPoints);
+            roomData.volume = roomData.area * roomData.height;
+            roomData.perimeter = roomData.walls.reduce((sum, wall) => sum + wall.length, 0);
+
+            // Default floor and ceiling properties if not already defined or update dynamic ones
+            if (!roomData.floor.id) {
+                roomData.floor = {
+                    id: generateUniqueId(),
+                    name: 'Floor',
+                    area: roomData.area,
+                    uValue: 0.12, // Default for insulated ground floor
+                    adjacencyType: 'ground',
+                    adjacentTemp: null // Not applicable for ground
+                };
+            } else {
+                roomData.floor.area = roomData.area; // Update area if drawing changes
+                // If the floor was the currently selected surface, its U-value and adjacency
+                // might have been edited in the sidebar. We need to persist that.
+                // This is complex because sidebar is tied to selectedMesh.
+                // A better approach is to not overwrite U-value/adjacency from sidebar
+                // unless explicitly saving it or the drawing changes.
+                // For now, let's keep the user's last selected/edited U-value/adjacency if available
+                // for floor/ceiling when processing.
+                // If `selectedSurfaceMesh` is floor/ceiling, its properties are updated by `updateSelectedSurfaceProperties`
+                // This function just ensures base properties are set.
+            }
+
+            if (!roomData.ceiling.id) {
+                roomData.ceiling = {
+                    id: generateUniqueId(),
+                    name: 'Ceiling',
+                    area: roomData.area,
+                    uValue: 0.12, // Default for insulated attic
+                    adjacencyType: 'unheatedAttic',
+                    adjacentTemp: null // Calculated dynamically for unheated attic
+                };
+            } else {
+                roomData.ceiling.area = roomData.area; // Update area if drawing changes
+            }
+
+            console.log('Room Data after processing:', roomData);
+            return true;
+        }
+
+
+        // --- 3D Visualization Logic ---
+        /**
+         * Initializes the Three.js 3D scene.
+         */
+        function init3D() {
+            const threeJsCanvas = document.getElementById('threeJsCanvas');
+            // Check if scene/renderer already exist to avoid re-initializing if unnecessary,
+            // but also ensure full reset if something was left from a previous session.
+            if (scene) {
+                // Dispose of old resources if re-initializing.
+                // This is important to prevent memory leaks and ensure a clean slate.
+                scene.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(mat => mat.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                    if (child.texture) child.texture.dispose(); // Dispose textures if any
+                    scene.remove(child);
+                });
+                if (renderer) renderer.dispose();
+                if (controls) controls.dispose();
+            }
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, threeJsCanvas.clientWidth / threeJsCanvas.clientHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ canvas: threeJsCanvas, antialias: true });
+            renderer.setSize(threeJsCanvas.clientWidth, threeJsCanvas.clientHeight);
+            renderer.setClearColor(0xf0f2f5); // Light grey background
+            renderer.shadowMap.enabled = true; // Enable shadows
+
+            // Orbit Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; // Smooth zooming/panning
+            controls.dampingFactor = 0.25;
+            controls.screenSpacePanning = false;
+            controls.maxPolarAngle = Math.PI / 2; // Limit vertical rotation
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 2); // soft white light
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(5, 10, 7);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 1024;
+            directionalLight.shadow.mapSize.height = 1024;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -10;
+            directionalLight.shadow.camera.right = 10;
+            directionalLight.shadow.camera.top = 10;
+            directionalLight.shadow.camera.bottom = -10;
+            scene.add(directionalLight);
+
+            camera.position.set(5, 5, 5); // Initial camera position
+
+            // Event listener for clicking on 3D objects
+            renderer.domElement.removeEventListener('click', on3DClick); // Remove old listener first
+            renderer.domElement.addEventListener('click', on3DClick);
+
+            // Initial render call, which will also trigger update3DModelFromRoomData
+            render3DModel(); 
+        }
+
+        /**
+         * Handles window resize for the 3D canvas.
+         */
+        function onWindowResize3D() {
+            const threeJsCanvas = document.getElementById('threeJsCanvas');
+            camera.aspect = threeJsCanvas.clientWidth / threeJsCanvas.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(threeJsCanvas.clientWidth, threeJsCanvas.clientHeight);
+            // No need to call render3DModel here explicitly, as it's called by init3D which might be called by showInnerTab
+            // or by the animation loop if it's already running.
+        }
+
+        /**
+         * Clears the 3D model from the scene.
+         */
+        function clear3DModel() {
+            if (roomMesh) {
+                scene.remove(roomMesh);
+                roomMesh.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(mat => mat.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+                roomMesh = null;
+            }
+            if (selectedSurfaceMesh) {
+                selectedSurfaceMesh.material.color.set(0xffffff); // Reset color
+                selectedSurfaceMesh = null;
+            }
+        }
+
+        /**
+         * Creates or updates the 3D model based on the roomData.
+         */
+        function update3DModelFromRoomData() {
+            clear3DModel(); // Clear previous room
+            if (!roomData.walls || roomData.walls.length < 3) {
+                console.log("Not enough walls to build a 3D model.");
+                return;
+            }
+
+            roomMesh = new THREE.Group(); // Group to hold all room elements
+            roomMesh.name = 'roomGroup';
+
+            const roomHeight = roomData.height;
+            const walls = roomData.walls;
+
+            // Define uniquePoints correctly based on drawingPoints here
+            const uniquePoints = drawingPoints.slice(0, drawingPoints.length - 1);
+            if (uniquePoints.length < 3) { // Ensure there are enough points after slicing
+                 console.log("Not enough unique points to build a 3D model.");
+                 return;
+            }
+
+            // Calculate center of the drawing for positioning in 3D
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            uniquePoints.forEach(p => { // Use uniquePoints here
+                minX = Math.min(minX, p.x);
+                minY = Math.min(minY, p.y);
+                maxX = Math.max(maxX, p.x);
+                maxY = Math.max(maxY, p.y);
+            });
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+
+
+            // Create Walls
+            for (let i = 0; i < walls.length; i++) {
+                const wall = walls[i];
+                const p1 = drawingPoints[i];
+                const p2 = drawingPoints[(i + 1) % (drawingPoints.length - 1)]; // Ensure last point connects to first
+
+                // Convert 2D canvas coords to 3D coords centered at (0,0,0)
+                const x1_m = (p1.x - centerX) / scaleFactor;
+                const y1_m = (p1.y - centerY) / scaleFactor;
+                const x2_m = (p2.x - centerX) / scaleFactor;
+                const y2_m = (p2.y - centerY) / scaleFactor;
+
+                const wallLength = wall.length; // Already in meters
+                
+                // Create a rectangle for the wall shape
+                const wallShape = new THREE.Shape();
+                wallShape.moveTo(0, 0);
+                wallShape.lineTo(wallLength, 0);
+                wallShape.lineTo(wallLength, roomHeight);
+                wallShape.lineTo(0, roomHeight);
+                wallShape.lineTo(0, 0);
+
+                // Create wall geometry by extruding the 2D shape
+                const wallGeometry = new THREE.ExtrudeGeometry(wallShape, { depth: 0.1, bevelEnabled: false }); // Thickness 0.1m
+                const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide }); // White walls
+                const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+
+                // Position and rotate wall
+                // Calculate the midpoint of the wall segment in 3D world coordinates
+                const midX = (x1_m + x2_m) / 2;
+                const midY = (y1_m + y2_m) / 2; // Y in 2D becomes Z in 3D
+                const angle = Math.atan2(y2_m - y1_m, x2_m - x1_m);
+
+                // Position the wall mesh's origin at its geometric center after extrusion
+                wallMesh.position.set(midX, roomHeight / 2, midY); // Position at midpoint, half height up
+                
+                // Rotate the wall around the Y-axis to align with the 2D segment
+                wallMesh.rotation.y = angle;
+
+                // Adjust position for extrusion depth (thickness) to center the wall on its line
+                // The extrusion is along the local Z-axis (which becomes world Z or X depending on rotation)
+                // Need to offset by half of the thickness, taking rotation into account
+                const offsetZ = 0.1 / 2; // Half of thickness
+                wallMesh.position.x -= offsetZ * Math.sin(angle);
+                wallMesh.position.z += offsetZ * Math.cos(angle);
+
+
+                wallMesh.userData = { type: 'wall', id: wall.id, index: i, properties: wall }; // Store wall data
+                wallMesh.castShadow = true;
+                wallMesh.receiveShadow = true;
+                roomMesh.add(wallMesh);
+
+                // Add windows and doors to the wall
+                // Note: Positioning windows/doors accurately on a rotated wall mesh requires more complex local coordinate transformations.
+                // For simplicity, these will be added relative to the wallMesh's *local* coordinate system (which is unrotated before rotation).
+                // This means their positions will be offset by the wallMesh's rotation.
+                // A more robust solution would be to create dummy objects, orient them, and add them, or calculate global positions.
+                wall.windows.forEach(win => {
+                    const windowGeometry = new THREE.BoxGeometry(win.width, win.height, 0.11); // Slightly thicker than wall
+                    const windowMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.7 }); // Sky blue, transparent
+                    const windowMesh = new THREE.Mesh(windowGeometry, windowMaterial);
+
+                    // Position window relative to the wall's local coordinate system (before wall rotation)
+                    // Centered horizontally on the wall's local X-axis (its length)
+                    // Vertical position: half height up from the floor + (roomHeight - windowHeight)/2
+                    // This assumes windows are placed relative to the wall's unrotated local (0,0,0) which is bottom-left of its geometry.
+                    windowMesh.position.set(wallLength / 2, win.height / 2 + (roomHeight - win.height) / 2, 0); 
+                    windowMesh.userData = { type: 'window', parentWallId: wall.id, properties: win };
+                    wallMesh.add(windowMesh); // Add as child of wall mesh
+                });
+
+                wall.doors.forEach(door => {
+                    const doorGeometry = new THREE.BoxGeometry(door.width, door.height, 0.11); // Slightly thicker
+                    const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 }); // Brown
+                    const doorMesh = new THREE.Mesh(doorGeometry, doorMaterial);
+
+                    // Position door relative to the wall's local coordinate system (before wall rotation)
+                    doorMesh.position.set(wallLength / 2, door.height / 2, 0); // Position at ground level, centered horizontally
+                    doorMesh.userData = { type: 'door', parentWallId: wall.id, properties: door };
+                    wallMesh.add(doorMesh); // Add as child of wall mesh
+                });
+            }
+
+            // Create Floor
+            const floorGeometry = new THREE.ShapeGeometry(createShapeFromPoints(uniquePoints, centerX, centerY, scaleFactor));
+            floorGeometry.rotateX(-Math.PI / 2); // Rotate to lay flat
+            const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, side: THREE.DoubleSide }); // Grey floor
+            const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+            floorMesh.position.y = 0; // At ground level
+            floorMesh.userData = { type: 'floor', id: roomData.floor.id, properties: roomData.floor };
+            floorMesh.receiveShadow = true;
+            roomMesh.add(floorMesh);
+
+            // Create Ceiling (similar to floor but at room height)
+            const ceilingGeometry = new THREE.ShapeGeometry(createShapeFromPoints(uniquePoints, centerX, centerY, scaleFactor));
+            ceilingGeometry.rotateX(Math.PI / 2); // Rotate to lay flat (inverted for viewing from below)
+            const ceilingMaterial = new THREE.MeshStandardMaterial({ color: 0xd0d0d0, side: THREE.DoubleSide }); // Slightly darker grey ceiling
+            const ceilingMesh = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+            ceilingMesh.position.y = roomHeight; // At ceiling height
+            ceilingMesh.userData = { type: 'ceiling', id: roomData.ceiling.id, properties: roomData.ceiling };
+            ceilingMesh.receiveShadow = true;
+            roomMesh.add(ceilingMesh);
+
+            scene.add(roomMesh);
+            // Calling render3DModel here will ensure it renders immediately after model update
+            // and the requestAnimationFrame loop will keep it rendering.
+            render3DModel(); 
+        }
+
+        /**
+         * Creates a Three.js Shape from 2D canvas points.
+         * @param {Array<object>} points - Array of points {x, y} in canvas coordinates.
+         * @param {number} centerX - X-coordinate of the center of the drawing.
+         * @param {number} centerY - Y-coordinate of the center of the drawing.
+         * @param {number} scale - Scale factor (pixels/meter).
+         * @returns {THREE.Shape} A Three.js Shape object.
+         */
+        function createShapeFromPoints(points, centerX, centerY, scale) {
+            const shape = new THREE.Shape();
+            if (points.length === 0) return shape;
+
+            // Convert first point to 3D meters, relative to center
+            const startX = (points[0].x - centerX) / scale;
+            const startY = (points[0].y - centerY) / scale;
+            shape.moveTo(startX, startY);
+
+            for (let i = 1; i < points.length; i++) {
+                const x = (points[i].x - centerX) / scale;
+                const y = (points[i].y - centerY) / scale;
+                shape.lineTo(x, y);
+            }
+            // No need to explicitly close shape here, as ShapeGeometry will implicitly close it if last point is same as first
+            // or if it's used for extrusion where outline is implied.
+            // For a simple polygon, lineTo to the start point is good practice.
+            shape.lineTo(startX, startY); // Close the shape
+
+            return shape;
+        }
+
+        /**
+         * Renders the 3D scene.
+         */
+        function render3DModel() {
+            if (renderer && scene && camera) {
+                controls.update(); // Only required if controls.enableDamping or controls.autoRotate are set to true
+                renderer.render(scene, camera);
+                requestAnimationFrame(render3DModel); // Continuously render
+            }
+        }
+
+        /**
+         * Handles click events on the 3D canvas to select surfaces.
+         * @param {MouseEvent} event - The mouse event.
+         */
+        function on3DClick(event) {
+            const threeJsCanvas = document.getElementById('threeJsCanvas');
+            const rect = threeJsCanvas.getBoundingClientRect();
+            const mouse = new THREE.Vector2();
+            mouse.x = ((event.clientX - rect.left) / threeJsCanvas.clientWidth) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / threeJsCanvas.clientHeight) * 2 + 1;
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            // Intersect with roomMesh children recursively to pick walls, floor, ceiling
+            const intersects = raycaster.intersectObjects(roomMesh ? roomMesh.children : [], true); // True to check all descendants
+
+            if (intersects.length > 0) {
+                let clickedObject = intersects[0].object;
+
+                // Traverse up to find the wall/floor/ceiling mesh, not windows/doors
+                while (clickedObject && !['wall', 'floor', 'ceiling'].includes(clickedObject.userData.type)) {
+                    clickedObject = clickedObject.parent;
+                }
+
+                if (clickedObject && clickedObject.userData.type) {
+                    if (selectedSurfaceMesh) {
+                        selectedSurfaceMesh.material.color.set(0xffffff); // Reset previous selection color
+                    }
+                    selectedSurfaceMesh = clickedObject;
+                    selectedSurfaceMesh.material.color.set(0xFFA500); // Highlight orange
+
+                    displaySurfaceProperties(selectedSurfaceMesh.userData.properties);
+                }
+            } else {
+                // Clicked outside any object, de-select
+                if (selectedSurfaceMesh) {
+                    selectedSurfaceMesh.material.color.set(0xffffff); // Reset color
+                    selectedSurfaceMesh = null;
+                }
+                surfacePropertiesDisplay.style.display = 'none'; // Hide panel
+            }
+        }
+
+        /**
+         * Displays properties of the selected surface (wall, floor, or ceiling) in the sidebar.
+         * @param {object} properties - The properties object of the selected surface.
+         */
+        function displaySurfaceProperties(properties) {
+            surfacePropertiesDisplay.style.display = 'block';
+            selectedSurfaceNameDisplay.textContent = properties.name;
+
+            // Set common properties
+            wallUValueInput.value = properties.uValue;
+            uValuePresetSelect.value = ''; // Reset preset select
+            adjacencyTypeSelect.value = properties.adjacencyType;
+
+            // Handle adjacent temperature input visibility
+            if (properties.adjacencyType === 'adjacentRoomHeated' || properties.adjacencyType === 'adjacentRoomUnheated' || properties.adjacencyType === 'unheatedSpace') {
+                adjacentTempContainer.style.display = 'block';
+                adjacentTempInput.value = properties.adjacentTemp !== null ? properties.adjacentTemp : '';
+            } else {
+                adjacentTempContainer.style.display = 'none';
+                adjacentTempInput.value = '';
+            }
+
+            // Specific handling for wall length and info text
+            const wallLengthInput = document.getElementById('wallLengthInput');
+            const wallLengthLabel = document.getElementById('wallLengthLabel');
+            const wallLengthInfo = document.getElementById('wallLengthInfo');
+
+            if (properties.type === 'wall') {
+                wallLengthInput.style.display = 'block';
+                wallLengthLabel.style.display = 'block';
+                wallLengthInfo.style.display = 'block';
+                wallLengthInput.value = properties.length.toFixed(2);
+            } else {
+                wallLengthInput.style.display = 'none';
+                wallLengthLabel.style.display = 'none';
+                wallLengthInfo.style.display = 'none';
+            }
+
+            // Populate windows and doors for walls
+            windowsDoorsContainer.innerHTML = ''; // Clear previous
+            if (properties.type === 'wall') {
+                properties.windows.forEach((win, index) => addWindowOrDoorInput('window', windowsDoorsContainer, win, index));
+                properties.doors.forEach((door, index) => addWindowOrDoorInput('door', windowsDoorsContainer, door, index));
+                addWindowBtn.style.display = 'inline-block';
+                addDoorBtn.style.display = 'inline-block';
+            } else {
+                addWindowBtn.style.display = 'none';
+                addDoorBtn.style.display = 'none';
+            }
+        }
+
+        /**
+         * Updates the properties of the currently selected surface in roomData.
+         */
+        function updateSelectedSurfaceProperties() {
+            if (!selectedSurfaceMesh) return;
+
+            const type = selectedSurfaceMesh.userData.type;
+            const id = selectedSurfaceMesh.userData.id;
+            let targetObject;
+
+            if (type === 'wall') {
+                targetObject = roomData.walls.find(w => w.id === id);
+            } else if (type === 'floor') {
+                targetObject = roomData.floor;
+            } else if (type === 'ceiling') {
+                targetObject = roomData.ceiling;
+            }
+
+            if (targetObject) {
+                targetObject.uValue = parseFloat(wallUValueInput.value);
+                targetObject.adjacencyType = adjacencyTypeSelect.value;
+                targetObject.adjacentTemp = adjacencyTypeSelect.value === 'adjacentRoomHeated' || adjacencyTypeSelect.value === 'adjacentRoomUnheated' || adjacencyTypeSelect.value === 'unheatedSpace' ? parseFloat(adjacentTempInput.value) : null;
+
+                // Update windows and doors
+                targetObject.windows = [];
+                targetObject.doors = [];
+                windowsDoorsContainer.querySelectorAll('.window-input-group').forEach(el => {
+                    targetObject.windows.push({
+                        width: parseFloat(el.querySelector('.windowWidth').value),
+                        height: parseFloat(el.querySelector('.windowHeight').value),
+                        uValue: parseFloat(el.querySelector('.windowUValue').value),
+                        adjacencyType: el.querySelector('.windowAdjacencyType').value,
+                        adjacentTemp: el.querySelector('.windowAdjacencyType').value !== 'external' ? parseFloat(el.querySelector('.windowAdjacentTemp').value) : null
+                    });
+                });
+                windowsDoorsContainer.querySelectorAll('.door-input-group').forEach(el => {
+                    targetObject.doors.push({
+                        width: parseFloat(el.querySelector('.doorWidth').value),
+                        height: parseFloat(el.querySelector('.doorHeight').value),
+                        uValue: parseFloat(el.querySelector('.doorUValue').value),
+                        adjacencyType: el.querySelector('.doorAdjacencyType').value,
+                        adjacentTemp: el.querySelector('.doorAdjacencyType').value !== 'external' ? parseFloat(el.querySelector('.doorAdjacentTemp').value) : null
+                    });
+                });
+                console.log(`Updated ${type} properties:`, targetObject);
+                update3DModelFromRoomData(); // Update 3D model after properties change
+            }
+        }
+
+
+        /**
+         * Shows the wall length modal with pre-filled values.
+         * @param {object} wallProperties - The properties of the wall to edit.
+         */
+        function showWallLengthModal(wallProperties) {
+            isModalActive = true;
+            wallLengthModal.style.display = 'flex';
+            document.getElementById('modalWallName').textContent = wallProperties.name;
+            modalWallLengthInput.value = wallProperties.length.toFixed(2);
+            modalWallUValueInput.value = wallProperties.uValue;
+            modalWallAdjacencyTypeSelect.value = wallProperties.adjacencyType;
+
+            // Handle adjacent temperature input visibility for modal
+            if (wallProperties.adjacencyType === 'adjacentRoomHeated' || wallProperties.adjacencyType === 'adjacentRoomUnheated' || wallProperties.adjacencyType === 'unheatedSpace') {
+                modalAdjacentTempContainer.style.display = 'block';
+                modalAdjacentTempInput.value = wallProperties.adjacentTemp !== null ? wallProperties.adjacentTemp : '';
+            } else {
+                modalAdjacentTempContainer.style.display = 'none';
+                modalAdjacentTempInput.value = '';
+            }
+
+            // Populate windows and doors for the wall in the modal
+            modalWindowsDoorsContainer.innerHTML = ''; // Clear previous
+            wallProperties.windows.forEach((win, index) => addWindowOrDoorInput('window', modalWindowsDoorsContainer, win, index));
+            wallProperties.doors.forEach((door, index) => addWindowOrDoorInput('door', modalWindowsDoorsContainer, door, index));
+        }
+
+        /**
+         * Saves the properties from the modal back to the roomData.
+         */
+        function saveModalWallProperties() {
+            if (wallIndexToEdit !== -1 && roomData.walls[wallIndexToEdit]) {
+                const wall = roomData.walls[wallIndexToEdit];
+                // wall.length is readonly from 2D, so only update U-value and adjacency
+                wall.uValue = parseFloat(modalWallUValueInput.value);
+                wall.adjacencyType = modalWallAdjacencyTypeSelect.value;
+                wall.adjacentTemp = modalWallAdjacencyTypeSelect.value !== 'external' ? parseFloat(modalAdjacentTempInput.value) : null;
+
+                // Update windows and doors from modal
+                wall.windows = [];
+                wall.doors = [];
+                modalWindowsDoorsContainer.querySelectorAll('.window-input-group').forEach(el => {
+                    wall.windows.push({
+                        width: parseFloat(el.querySelector('.windowWidth').value),
+                        height: parseFloat(el.querySelector('.windowHeight').value),
+                        uValue: parseFloat(el.querySelector('.windowUValue').value),
+                        adjacencyType: el.querySelector('.windowAdjacencyType').value,
+                        adjacentTemp: el.querySelector('.windowAdjacencyType').value !== 'external' ? parseFloat(el.querySelector('.windowAdjacentTemp').value) : null
+                    });
+                });
+                modalWindowsDoorsContainer.querySelectorAll('.door-input-group').forEach(el => {
+                    wall.doors.push({
+                        width: parseFloat(el.querySelector('.doorWidth').value),
+                        height: parseFloat(el.querySelector('.doorHeight').value),
+                        uValue: parseFloat(el.querySelector('.doorUValue').value),
+                        adjacencyType: el.querySelector('.doorAdjacencyType').value,
+                        adjacentTemp: el.querySelector('.doorAdjacencyType').value !== 'external' ? parseFloat(el.querySelector('.doorAdjacentTemp').value) : null
+                    });
+                });
+
+                showMessageBox(`Wall ${wall.name} properties updated.`, 1500);
+            }
+            wallLengthModal.style.display = 'none';
+            isModalActive = false;
+            // Ensure roomData.walls is updated before updating 3D model
+            if (process2DDrawingToRoomData()) { // Re-process drawing to ensure all roomData is consistent
+                update3DModelFromRoomData(); // Rebuild 3D model with updated properties
+            }
+        }
+
+        /**
+         * Cancels editing and closes the modal.
+         */
+        function cancelModalWallProperties() {
+            wallLengthModal.style.display = 'none';
+            isModalActive = false;
+            // Optionally, revert changes if needed, but for now just close.
+        }
+
+        /**
+         * Adds input fields for a new window or door.
+         * @param {string} type - 'window' or 'door'.
+         * @param {HTMLElement} container - The container element to add inputs to.
+         * @param {object} [initialData] - Optional initial data for pre-filling.
+         * @param {number} [index] - Optional index for identification.
+         */
+        function addWindowOrDoorInput(type, container, initialData = {}, index = null) {
+            const uniqueId = generateUniqueId();
+            const itemHtml = `
+                <div class="dynamic-item ${type}-input-group" data-id="${uniqueId}">
+                    <h4>${type === 'window' ? 'Window' : 'Door'} ${index !== null ? index + 1 : ''}</h4>
+                    <div class="input-group">
+                        <label class="input-label">${type === 'window' ? 'Window' : 'Door'} Width (m):</label>
+                        <input type="number" class="${type}Width input-field" value="${initialData.width || (type === 'window' ? 1.0 : 0.8)}" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">${type === 'window' ? 'Window' : 'Door'} Height (m):</label>
+                        <input type="number" class="${type}Height input-field" value="${initialData.height || (type === 'window' ? 1.2 : 2.0)}" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">U-Value (W/m²K):</label>
+                        <input type="number" class="${type}UValue input-field" value="${initialData.uValue || (type === 'window' ? 1.4 : 1.8)}" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Adjacency:</label>
+                        <select class="${type}AdjacencyType input-field">
+                            <option value="external" ${initialData.adjacencyType === 'external' ? 'selected' : ''}>External</option>
+                            <option value="adjacentRoomHeated" ${initialData.adjacencyType === 'adjacentRoomHeated' ? 'selected' : ''} data-temp-preset="21">Adjacent Room (Heated)</option>
+                            <option value="adjacentRoomUnheated" ${initialData.adjacencyType === 'adjacentRoomUnheated' ? 'selected' : ''} data-temp-preset="16">Adjacent Room (Unheated)</option>
+                        </select>
+                    </div>
+                    <div class="input-group ${initialData.adjacencyType === 'external' || !initialData.adjacencyType ? 'hidden' : ''}" data-temp-input-container>
+                        <label class="input-label">Adjacent Temperature (°C):</label>
+                        <input type="number" class="${type}AdjacentTemp input-field" value="${initialData.adjacentTemp !== null ? initialData.adjacentTemp : ''}" step="0.1">
+                    </div>
+                    <div class="remove-btn-container">
+                        <button class="remove-item bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md text-white text-sm">Remove</button>
+                    </div>
+                </div>
+            `;
+            const div = document.createElement('div');
+            div.innerHTML = itemHtml.trim();
+            const newItem = div.firstChild;
+            container.appendChild(newItem);
+
+            // Add event listener for remove button
+            newItem.querySelector('.remove-item').addEventListener('click', () => {
+                newItem.remove();
+                if (selectedSurfaceMesh) {
+                    updateSelectedSurfaceProperties(); // Re-sync with roomData
+                    update3DModelFromRoomData(); // Update 3D model after removal
+                }
+            });
+
+            // Add event listener for adjacency type change to toggle adjacent temperature input
+            newItem.querySelector(`.${type}AdjacencyType`).addEventListener('change', (e) => {
+                const tempInputContainer = newItem.querySelector('[data-temp-input-container]');
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                const tempPreset = selectedOption.dataset.tempPreset;
+
+                if (e.target.value === 'adjacentRoomHeated' || e.target.value === 'adjacentRoomUnheated') {
+                    tempInputContainer.classList.remove('hidden');
+                    if (tempPreset) {
+                        newItem.querySelector(`.${type}AdjacentTemp`).value = tempPreset;
+                    }
+                } else {
+                    tempInputContainer.classList.add('hidden');
+                    newItem.querySelector(`.${type}AdjacentTemp`).value = '';
+                }
+                if (selectedSurfaceMesh) updateSelectedSurfaceProperties();
+            });
+
+            // Add event listeners for input changes to update selected surface properties directly
+            newItem.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', () => {
+                    if (selectedSurfaceMesh) updateSelectedSurfaceProperties();
+                });
+            });
+        }
+
+
+        // --- Heat Loss Calculation Logic ---
+
+        /**
+         * Calculates the Delta T for heat loss calculations based on adjacency type.
+         * @param {string} adjacencyType - Type of adjacency (e.g., 'external', 'adjacentRoomHeated').
+         * @param {number|null} adjacentTemp - Explicit adjacent temperature if known.
+         * @returns {number} Temperature difference (Delta T) in °C.
+         */
+        function getDeltaT(adjacencyType, adjacentTemp) {
+            const internalTemp = roomData.internalTemp;
+            const externalTempActual = roomData.externalTemp; // External design temperature
+
+            switch (adjacencyType) {
+                case 'external':
+                    return internalTemp - externalTempActual;
+                case 'adjacentRoomHeated':
+                    // If adjacentTemp is provided, use it, otherwise use a default heated room temp (e.g., 21°C)
+                    return internalTemp - (adjacentTemp !== null ? adjacentTemp : 21);
+                case 'adjacentRoomUnheated':
+                    // If adjacentTemp is provided, use it, otherwise use a default unheated room temp (e.g., 16°C)
+                    return internalTemp - (adjacentTemp !== null ? adjacentTemp : 16);
+                case 'ground':
+                    // Ground temperature is typically assumed to be higher than external air, e.g., 10°C or a specific ground temp factor.
+                    // For simplicity, let's use a fixed delta for now if no specific ground temp is provided.
+                    // A more accurate model would use soil conductivity and depth.
+                    return internalTemp - (adjacentTemp !== null ? adjacentTemp : 10);
+                case 'unheatedSpace':
+                    // e.g., crawl space, unheated basement. Assume a temperature closer to external.
+                    return internalTemp - (adjacentTemp !== null ? adjacentTemp : (externalTempActual + 5)); // 5 deg C warmer than external
+                case 'unheatedAttic':
+                    // If adjacentTemp is provided, use it, otherwise calculate dynamically
+                    return internalTemp - (adjacentTemp !== null ? adjacentTemp : (externalTempActual + 5));
+                default:
+                    return 0; // No temperature difference, no heat loss
+            }
+        }
+
+        /**
+         * Calculates the total heat loss for the room based on current roomData.
+         */
+        function calculateHeatLoss() {
+            if (roomData.walls.length === 0) {
+                showMessageBox("Please draw a room outline first.", 3000);
+                return;
+            }
+
+            // Ensure room data is up-to-date from drawing
+            if (!process2DDrawingToRoomData()) {
+                showMessageBox("Room outline is incomplete or not closed. Please complete the drawing.", 3000);
+                return;
+            }
+
+            let totalConductionLoss = 0; // Watts
+
+            // Calculate heat loss for walls
+            roomData.walls.forEach(wall => {
+                let wallArea = wall.length * wall.height; // Use the potentially edited wall.length
+                const wallDeltaT = getDeltaT(wall.adjacencyType, wall.adjacentTemp);
+
+                // Subtract door and window areas from wall area and add their own losses
+                wall.doors.forEach(door => {
+                    const doorArea = door.width * door.height;
+                    wallArea -= doorArea;
+                    // Doors/windows inherit adjacency from the wall they are on, or their own if set
+                    const doorDeltaT = getDeltaT(door.adjacencyType || wall.adjacencyType, door.adjacentTemp || wall.adjacentTemp);
+                    totalConductionLoss += (doorArea * door.uValue * doorDeltaT);
+                });
+
+                wall.windows.forEach(window => {
+                    const windowArea = window.width * window.height;
+                    wallArea -= windowArea;
+                    // Doors/windows inherit adjacency from the wall they are on, or their own if set
+                    const windowDeltaT = getDeltaT(window.adjacencyType || wall.adjacencyType, window.adjacentTemp || wall.adjacentTemp);
+                    totalConductionLoss += (windowArea * window.uValue * windowDeltaT);
+                });
+
+                // Add heat loss for the remaining wall area
+                totalConductionLoss += (wallArea * wall.uValue * wallDeltaT);
+            });
+
+            // Calculate heat loss for floor
+            const floor = roomData.floor;
+            const floorDeltaT = getDeltaT(floor.adjacencyType, floor.adjacentTemp);
+            totalConductionLoss += (floor.area * floor.uValue * floorDeltaT);
+
+            // Calculate heat loss for ceiling
+            const ceiling = roomData.ceiling;
+            const ceilingDeltaT = getDeltaT(ceiling.adjacencyType, ceiling.adjacentTemp);
+            totalConductionLoss += (ceiling.area * ceiling.uValue * ceilingDeltaT);
+
+
+            // Calculate infiltration heat loss
+            // Q_inf = 0.33 * V * ACH * DeltaT
+            // 0.33 is a constant for air density, specific heat, and conversion factors (from J/m3K to Wh/m3K)
+            const roomVolume = roomData.volume;
+            const ach = roomData.ach;
+            const infiltrationDeltaT = roomData.internalTemp - roomData.externalTemp; // Infiltration is typically to external air
+            const infiltrationLoss = 0.33 * roomVolume * ach * infiltrationDeltaT;
+
+            const totalHeatLoss = totalConductionLoss + infiltrationLoss;
+            heatLossResultDiv.textContent = `Total Heat Loss: ${totalHeatLoss.toFixed(2)} W`;
+            showMessageBox(`Heat loss calculated: ${totalHeatLoss.toFixed(2)} W`, 4000);
+
+            // --- Radiator Sizing Suggestion Logic ---
+            const desiredFlowTemp = parseFloat(flowTempInput.value);
+            const desiredReturnTemp = parseFloat(returnTempInput.value);
+            const desiredRoomTemp = parseFloat(roomTempInputRadiator.value);
+
+            if (isNaN(desiredFlowTemp) || isNaN(desiredReturnTemp) || isNaN(desiredRoomTemp)) {
+                radiatorSuggestionsDiv.innerHTML = '<p class="text-red-500">Please enter valid temperatures for radiator sizing.</p>';
+                return;
+            }
+
+            const suggestedRads = suggestRadiators(totalHeatLoss, desiredFlowTemp, desiredReturnTemp, desiredRoomTemp);
+            
+            // Clear previous suggestions before adding new ones
+            radiatorSuggestionsDiv.innerHTML = `
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Suggested Radiators for your System:</h3>
+                <p class="text-sm text-gray-600 mb-4">Operating Temperatures: ${desiredFlowTemp}°C (Flow) / ${desiredReturnTemp}°C (Return) / ${desiredRoomTemp}°C (Room)</p>
+            `;
+
+            if (suggestedRads.length > 0) {
+                radiatorSuggestionsDiv.innerHTML += '<ul>';
+                suggestedRads.slice(0, 10).forEach(rad => { // Display top 10 suitable radiators
+                    radiatorSuggestionsDiv.innerHTML += `<li><strong>${rad.type} ${rad.dimensions}</strong>: Output ~${rad.outputAtActualDeltaT} Watts (at approx. ∆T ${rad.deltaTUsed}°C)</li>`;
+                });
+                radiatorSuggestionsDiv.innerHTML += '</ul>';
+            } else {
+                radiatorSuggestionsDiv.innerHTML += '<p class="text-red-500">No suitable Purmo Compact radiators found for the calculated heat loss and your specified operating temperatures. Consider larger radiators, different types, or reducing heat loss.</p>';
+            }
+        }
+
+        /**
+         * Calculates the Delta T for a radiator based on flow, return, and room temperatures.
+         * @param {number} flowTemp - Flow temperature of the water to the radiator.
+         * @param {number} returnTemp - Return temperature of the water from the radiator.
+         * @param {number} roomTemp - Desired room temperature.
+         * @returns {number} Calculated Delta T.
+         */
+        function calculateRadiatorDeltaT(flowTemp, returnTemp, roomTemp) {
+            return ((flowTemp + returnTemp) / 2) - roomTemp;
+        }
+
+        /**
+         * Gets the conversion factor to adjust radiator output from Delta T 50°C to a different Delta T.
+         * This is a simplified approximation (exponent typically 1.25-1.3 for radiators).
+         * For more accuracy, a manufacturer's specific correction factor table or more complex formula would be needed.
+         * @param {number} targetDeltaT - The Delta T to convert to.
+         * @returns {number} The conversion factor.
+         */
+        function getConversionFactorFromDeltaT50(targetDeltaT) {
+            const referenceDeltaT = 50; // Radiator outputs are often given at Delta T 50°C
+            const n_exponent = 1.28; // Typical exponent for steel panel radiators (can vary)
+            return Math.pow((targetDeltaT / referenceDeltaT), n_exponent);
+        }
+
+        /**
+         * Suggests suitable radiators based on calculated heat loss and desired operating temperatures.
+         * @param {number} roomHeatLossWatts - The calculated heat loss for the room in Watts.
+         * @param {number} flowTemp - Desired flow temperature.
+         * @param {number} returnTemp - Desired return temperature.
+         * @param {number} roomTemp - Desired room temperature.
+         * @returns {Array<object>} A sorted array of suitable radiator suggestions.
+         */
+        function suggestRadiators(roomHeatLossWatts, flowTemp, returnTemp, roomTemp) {
+            const suggestions = [];
+            const actualDeltaT = calculateRadiatorDeltaT(flowTemp, returnTemp, roomTemp);
+
+            if (actualDeltaT <= 0) {
+                console.warn("Calculated radiator Delta T is zero or negative. Cannot size radiators.");
+                return suggestions;
+            }
+
+            for (const rad of purmoRadiatorData) {
+                let radiatorOutputAtActualDeltaT;
+
+                // Prioritize direct catalogue data for ∆T 50 and ∆T 30 if actualDeltaT is very close
+                if (actualDeltaT >= 49 && actualDeltaT <= 51) { // Close to Delta T 50
+                    radiatorOutputAtActualDeltaT = rad.outputDeltaT50;
+                } else if (actualDeltaT >= 29 && actualDeltaT <= 31) { // Close to Delta T 30
+                    radiatorOutputAtActualDeltaT = rad.outputDeltaT30;
+                } else {
+                    // For other Delta T values, calculate using the conversion factor from ∆T 50°C.
+                    const conversionFactor = getConversionFactorFromDeltaT50(actualDeltaT);
+                    radiatorOutputAtActualDeltaT = rad.outputDeltaT50 * conversionFactor;
+                }
+
+                // Check if the radiator's calculated output meets or exceeds the room's heat loss
+                // Add a small buffer (e.g., 5%) to ensure adequate sizing
+                if (radiatorOutputAtActualDeltaT >= roomHeatLossWatts * 1.05) { // 5% buffer
+                    suggestions.push({
+                        type: rad.type,
+                        dimensions: `${rad.height}x${rad.width}mm`,
+                        outputAtActualDeltaT: radiatorOutputAtActualDeltaT.toFixed(0), // Rounded to whole Watts
+                        deltaTUsed: actualDeltaT.toFixed(1) // Show the actual Delta T calculated
+                    });
+                }
+            }
+            // Sort suggestions by output in ascending order (smallest suitable first)
+            return suggestions.sort((a, b) => parseFloat(a.outputAtActualDeltaT) - parseFloat(b.outputAtActualDeltaT));
+        }
+
+        // --- End of Radiator Sizing Code ---
+
+
+        // --- Design Hub Original Tool Logic (Modified) ---
+
+        // Tab switching functionality for the main Design Hub tabs
+        function openTab(tabName) { // FIX: Changed parameter to tabName (e.g., 'home', 'heatloss')
+            // Hide all tab content
+            const tabContents = document.getElementsByClassName('tab-content');
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove('active');
+            }
+
+            // Remove active class from all tab buttons
+            const tabButtons = document.getElementsByClassName('tab-button');
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove('active');
+            }
+
+            // Show the selected tab content
+            document.getElementById(tabName + '-content').classList.add('active'); // FIX: Use tabName + '-content'
+
+            // Add active class to the clicked button
+            const activeButton = document.querySelector(`button[onclick="openTab('${tabName}')"]`); // FIX: Use tabName
+            if (activeButton) { // Ensure button exists
+                activeButton.classList.add('active');
+            }
+
+            // Special handling for the Heat Loss Calculator tab
+            if (tabName === 'heatloss') { // FIX: Use tabName
+                // Initialize 3D scene only when the tab is active
+                init3D();
+                // Ensure the 2D drawing tab is active by default when opening Heat Loss Calculator
+                showInnerTab('drawing'); // Updated to use the correct ID for the drawing tab
+            }
+        }
+
+        // Underfloor Heating Tool
+        const ufhTool = {
+            roomCount: 0,
+            addRoom: function() {
+                this.roomCount++;
+                const roomTemplate = `
+                    <div class="room" id="ufh-room${this.roomCount}">
+                        <h3>Room ${this.roomCount}</h3>
+                        <div class="input-group">
+                            <label>Room Name</label>
+                            <select class="roomName">
+                                <option value="Living Room">Living Room</option>
+                                <option value="Kitchen">Kitchen</option>
+                                <option value="Bedroom">Bedroom</option>
+                                <option value="Bathroom">Bathroom</option>
+                                <option value="WC">WC</option>
+                                <option value="En-Suite">En-Suite</option>
+                                <option value="Dining Room">Dining Room</option>
+                                <option value="Hallway">Hallway</option>
+                                <option value="Office">Office</option>
+                                <option value="Utility Room">Utility Room</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Room Area (m²)</label>
+                            <input type="number" class="roomArea" placeholder="Enter area in m²" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Pipe Spacing (mm)</label>
+                            <select class="pipeSpacing">
+                                <option value="100">100 mm</option>
+                                <option value="150">150 mm</option>
+                                <option value="200">200 mm</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Floor Covering</label>
+                            <select class="floorCovering">
+                                <option value="tiles">Tiles (Good)</option>
+                                <option value="wood">Wood (Moderate)</option>
+                                <option value="carpet">Carpet (Poor)</option>
+                            </select>
+                        </div>
+                        <button class="delete-room" onclick="ufhTool.removeRoom('ufh-room${this.roomCount}')">Remove Room</button>
+                    </div>
+                `;
+                document.getElementById('ufh-rooms-container').insertAdjacentHTML('beforeend', roomTemplate);
+            },
+            removeRoom: function(id) {
+                document.getElementById(id).remove();
+            },
+            calculateUFH: function() {
+                let totalPipeLength = 0; // meters
+                let totalManifolds = 0;
+                const rooms = document.querySelectorAll('#ufh-rooms-container .room');
+
+                rooms.forEach(room => {
+                    const area = parseFloat(room.querySelector('.roomArea').value);
+                    const pipeSpacing = parseInt(room.querySelector('.pipeSpacing').value);
+                    const floorCovering = room.querySelector('.floorCovering').value;
+
+                    if (isNaN(area) || area <= 0) {
+                        showMessageBox('Please enter a valid area for all rooms.', 3000); // FIX: Use custom message box
+                        return;
+                    }
+
+                    // Pipe length calculation based on area and spacing
+                    // Assuming roughly 5m of pipe per m² for 100mm spacing, scaling accordingly
+                    let pipePerSqM;
+                    if (pipeSpacing === 100) pipePerSqM = 10;
+                    else if (pipeSpacing === 150) pipePerSqM = 6.7;
+                    else if (pipeSpacing === 200) pipePerSqM = 5;
+
+                    let roomPipeLength = area * pipePerSqM;
+                    totalPipeLength += roomPipeLength;
+
+                    // Manifold loops - typical loop length 70-100m, let's use 90m average
+                    const loops = Math.ceil(roomPipeLength / 90);
+                    totalManifolds += loops > 0 ? 1 : 0; // Each room needs at least one manifold connection if it has pipe
+
+                    // Adjustments for floor covering (simplistic)
+                    // Not directly affecting pipe length, but might affect efficiency/output
+                    // For calculation, we'll stick to pipe length based on area and spacing
+                });
+
+                document.getElementById('totalPipeLength').textContent = `Total Estimated Pipe Length: ${totalPipeLength.toFixed(2)} meters`;
+                document.getElementById('totalManifolds').textContent = `Total Estimated Manifold Connections: ${totalManifolds}`;
+                document.getElementById('ufh-results').style.display = 'block';
+            }
+        };
+
+        // Cylinder Sizing Tool
+        const cylinderSizingTool = {
+            calculateCylinderSize: function() {
+                const numBedrooms = parseInt(document.getElementById('numBedrooms').value);
+                const numOccupants = parseInt(document.getElementById('numOccupants').value);
+                let recommendedSize = 'N/A';
+
+                if (isNaN(numBedrooms) || numBedrooms <= 0 || isNaN(numOccupants) || numOccupants <= 0) {
+                    showMessageBox('Please enter valid numbers for bedrooms and occupants.', 3000); // FIX: Use custom message box
+                    return;
+                }
+
+                // MCS Heat Pump Standard 2023 guidance (simplified example)
+                // This is a highly simplified rule. Real MCS guidance is more nuanced,
+                // considering flow rates, hot water demand profiles, etc.
+                if (numOccupants <= 2) {
+                    recommendedSize = '150 - 180 Litres';
+                } else if (numOccupants <= 4) {
+                    recommendedSize = '180 - 210 Litres';
+                } else if (numOccupants <= 6) {
+                    recommendedSize = '210 - 250 Litres';
+                } else {
+                    recommendedSize = '250+ Litres (Custom Assessment Needed)';
+                }
+
+                document.getElementById('recommendedCylinderSize').textContent = `Recommended Cylinder Size: ${recommendedSize}`;
+                document.getElementById('cylinder-results').style.display = 'block';
+            }
+        };
+
+        // Materials Selection Tool
+        const selectionTool = {
+            componentSetups: {
+                'mitsubishi-ecodan-5kw': [
+                    { item: 'Heat Pump Unit', description: 'Mitsubishi Ecodan 5kW', quantity: 1, unit: 'unit' },
+                    { item: 'Cylinder', description: '210L Hot Water Cylinder', quantity: 1, unit: 'unit' },
+                    { item: 'Buffer Tank', description: '50L Buffer Tank', quantity: 1, unit: 'unit' },
+                    { item: 'Pipework', description: '28mm Copper Pipe', quantity: 20, unit: 'meter' },
+                    { item: 'Valves', description: 'Assorted Isolation Valves', quantity: 6, unit: 'unit' },
+                    { item: 'Radiators', description: 'Panel Radiator (various sizes)', quantity: 'variable', unit: 'unit' }
+                ],
+                'mitsubishi-ecodan-8kw': [
+                    { item: 'Heat Pump Unit', description: 'Mitsubishi Ecodan 8kW', quantity: 1, unit: 'unit' },
+                    { item: 'Cylinder', description: '250L Hot Water Cylinder', quantity: 1, unit: 'unit' },
+                    { item: 'Buffer Tank', description: '100L Buffer Tank', quantity: 1, unit: 'unit' },
+                    { item: 'Pipework', description: '35mm Copper Pipe', quantity: 25, unit: 'meter' },
+                    { item: 'Valves', description: 'Assorted Isolation Valves', quantity: 8, unit: 'unit' },
+                    { item: 'Radiators', description: 'Panel Radiator (various sizes)', quantity: 'variable', unit: 'unit' }
+                ],
+                'grant-aerona3-6kw': [
+                    { item: 'Heat Pump Unit', description: 'Grant Aerona³ 6kW', quantity: 1, unit: 'unit' },
+                    { item: 'Cylinder', description: '180L Hot Water Cylinder', quantity: 1, unit: 'unit' },
+                    { item: 'Flexi Pipes', description: 'Grant Flexi Connection Kit', quantity: 1, unit: 'kit' },
+                    { item: 'Pipework', description: '28mm Copper Pipe', quantity: 18, unit: 'meter' },
+                    { item: 'Radiators', description: 'Panel Radiator (various sizes)', quantity: 'variable', unit: 'unit' }
+                ],
+                'grant-aerona3-10kw': [
+                    { item: 'Heat Pump Unit', description: 'Grant Aerona³ 10kW', quantity: 1, unit: 'unit' },
+                    { item: 'Cylinder', description: '210L Hot Water Cylinder', quantity: 1, unit: 'unit' },
+                    { item: 'Flexi Pipes', description: 'Grant Flexi Connection Kit', quantity: 1, unit: 'kit' },
+                    { item: 'Pipework', description: '35mm Copper Pipe', quantity: 22, unit: 'meter' },
+                    { item: 'Radiators', description: 'Panel Radiator (various sizes)', quantity: 'variable', unit: 'unit' }
+                ],
+                'vaillant-arotherm-7kw': [
+                    { item: 'Heat Pump Unit', description: 'Vaillant aroTHERM plus 7kW', quantity: 1, unit: 'unit' },
+                    { item: 'Cylinder', description: '200L uniSTOR Cylinder', quantity: 1, unit: 'unit' },
+                    { item: 'Buffer Tank', description: '60L Buffer Tank', quantity: 1, unit: 'unit' },
+                    { item: 'Pipework', description: '28mm Steel Pipe', quantity: 20, unit: 'meter' },
+                    { item: 'Controls', description: 'Vaillant sensoCOMFORT control', quantity: 1, unit: 'unit' },
+                    { item: 'Radiators', description: 'Panel Radiator (various sizes)', quantity: 'variable', unit: 'unit' }
+                ],
+                'samsung-ehs-9kw': [
+                    { item: 'Heat Pump Unit', description: 'Samsung EHS Mono 9kW', quantity: 1, unit: 'unit' },
+                    { item: 'Cylinder', description: '200L Samsung Cylinder', quantity: 1, unit: 'unit' },
+                    { item: 'Controls', description: 'Samsung MWR-WG00PN control', quantity: 1, unit: 'unit' },
+                    { item: 'Pipework', description: '28mm Copper Pipe', quantity: 20, unit: 'meter' },
+                    { item: 'Radiators', description: 'Panel Radiator (various sizes)', quantity: 'variable', unit: 'unit' }
+                ],
+            },
+            loadSetups: function() {
+                const heatPumpModelSelect = document.getElementById('heatPumpModel');
+                heatPumpModelSelect.addEventListener('change', this.updateComponentSelection.bind(this));
+            },
+            updateComponentSelection: function() {
+                const heatPumpModel = document.getElementById('heatPumpModel').value;
+                const componentSelectionDiv = document.getElementById('componentSelection');
+                const heatPumpDetails = document.getElementById('heatPumpDetails');
+                componentSelectionDiv.innerHTML = '';
+                heatPumpDetails.textContent = '';
+
+                if (heatPumpModel) {
+                    const components = this.componentSetups[heatPumpModel];
+                    if (components) {
+                        heatPumpDetails.textContent = `Selected: ${components[0].description}`; // Display heat pump details
+
+                        components.forEach(comp => {
+                            if (comp.item !== 'Heat Pump Unit') { // Don't add heat pump unit to selectable components
+                                const isRadiator = comp.item === 'Radiators';
+                                const inputId = comp.item.replace(/\s+/g, '-') + '-qty';
+                                const componentHtml = `
+                                    <div class="input-group">
+                                        <label for="${inputId}">${comp.item} (${comp.description}):</label>
+                                        <input type="number" id="${inputId}" value="${isRadiator ? '0' : comp.quantity}" ${isRadiator ? '' : 'readonly'}>
+                                        <span>${comp.unit}</span>
+                                    </div>
+                                `;
+                                componentSelectionDiv.insertAdjacentHTML('beforeend', componentHtml);
+                            }
+                        });
+                    }
+                }
+            },
+            generateBOM: function() {
+                const heatPumpModel = document.getElementById('heatPumpModel').value;
+                const bomTableBody = document.querySelector('#bom-table tbody');
+                bomTableBody.innerHTML = '';
+
+                if (!heatPumpModel) {
+                    showMessageBox('Please select a Heat Pump Model first.', 3000); // FIX: Use custom message box
+                    return;
+                }
+
+                const selectedComponents = this.componentSetups[heatPumpModel];
+                if (selectedComponents) {
+                    selectedComponents.forEach(comp => {
+                        let quantity = comp.quantity;
+                        if (comp.item === 'Radiators') {
+                            const radiatorQtyInput = document.getElementById('Radiators--qty'); // Correct ID for radiator input
+                            if (radiatorQtyInput) {
+                                quantity = parseInt(radiatorQtyInput.value) || 0;
+                            } else {
+                                quantity = 0; // If input not found, default to 0
+                            }
+                        }
+
+                        const row = `
+                            <tr>
+                                <td>${comp.item}</td>
+                                <td>${comp.description}</td>
+                                <td>${quantity}</td>
+                                <td>${comp.unit}</td>
+                            </tr>
+                        `;
+                        bomTableBody.insertAdjacentHTML('beforeend', row);
+                    });
+                }
+
+                document.getElementById('bom-results').style.display = 'block';
+            }
+        };
+    </script>
+</body>
+</html>
